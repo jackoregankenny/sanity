@@ -1,7 +1,4 @@
 import activeIngredient from './activeIngredient'
-import author from './author'
-import category from './category'
-import post from './post'
 import product from './product'
 import productDocument from './productDocument'
 import productVariant from './productVariant'
@@ -12,6 +9,7 @@ import recommendedTool from './recommendedTool'
 import translations from './shared/translations'
 import { blocks } from './blocks'
 import { localizedText } from './shared/localizedText'
+import { heroBlock, featuresBlock, galleryBlock, videoBlock } from './blocks/pageBlocks'
 
 export const schemaTypes = [
   // Shared Types
@@ -21,21 +19,20 @@ export const schemaTypes = [
   // Blocks
   ...blocks,
   
-  // Products
+  // Page Builder Blocks
+  heroBlock,
+  featuresBlock,
+  galleryBlock,
+  videoBlock,
+  
+  // Products & Related
   product,
   productVariant,
   productDocument,
   activeIngredient,
   
-  // Blog
-  post,
-  author,
-  category,
-  
-  // Pages
+  // Pages & Components
   page,
-  
-  // Components
   component,
   callToAction,
   

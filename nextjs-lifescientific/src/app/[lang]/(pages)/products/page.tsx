@@ -7,8 +7,7 @@ import { languages } from "@/config/languages"
 import { notFound } from "next/navigation"
 import { Metadata } from "next"
 import { getTranslations } from "@/hooks/useTranslations"
-
-type LanguageCode = typeof languages[number]['id']
+import type { LanguageCode } from "@/hooks/useTranslations"
 
 interface ProductDocument extends SanityDocument {
   name: string
@@ -21,14 +20,6 @@ interface ProductDocument extends SanityDocument {
     alt?: string
   }
   category: 'pesticide' | 'herbicide' | 'fungicide'
-  variants: Array<{
-    name: string
-    activeIngredients: Array<{
-      name: string
-      amount: string
-      units: string
-    }>
-  }>
 }
 
 interface Props {
@@ -37,26 +28,32 @@ interface Props {
   }
 }
 
-// Validate params before using them
-async function validateParams(params: { lang: string }): Promise<{ lang: LanguageCode }> {
-  if (!languages.some(l => l.id === params.lang)) {
+// Generate static params for all supported languages
+export function generateStaticParams() {
+  return languages.map((lang) => ({
+    lang: lang.id,
+  }))
+}
+
+// Validate the language parameter
+function validateLanguage(lang: string): asserts lang is LanguageCode {
+  if (!languages.some(l => l.id === lang)) {
     notFound()
   }
-  return { lang: params.lang as LanguageCode }
 }
 
 // Generate metadata
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { lang } = await validateParams(params)
-
+export async function generateMetadata(props: Props): Promise<Metadata> {
   try {
-    const translations = await getTranslations(lang)
+    const params = await Promise.resolve(props.params)
+    validateLanguage(params.lang)
+    const translations = await getTranslations(params.lang)
     return {
       title: translations.products.pageTitle,
       description: translations.products.pageDescription,
     }
-  } catch (error) {
-    // Fallback metadata if translations fail
+  } catch {
+    // Fallback metadata if validation or translations fail
     return {
       title: 'Products | Life Scientific',
       description: 'Browse our range of agricultural solutions.',
@@ -65,48 +62,38 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 // Query to get products in the current language
-const PRODUCTS_QUERY = `*[
+const getProductsQuery = `*[
   _type == "product" &&
-  language == $lang &&
+  language == $language &&
   defined(slug.current)
-] | order(name asc) {
+]|order(_createdAt desc){
   _id,
   _type,
   name,
   slug,
   tagline,
   productImage,
-  category,
-  variants[] {
-    name,
-    activeIngredients[] {
-      name,
-      amount,
-      units
-    }
-  }
+  category
 }`
 
-export default async function ProductsPage({ params }: Props) {
-  const { lang } = await validateParams(params)
-  const translations = await getTranslations(lang)
+export default async function ProductsPage(props: Props) {
+  const params = await Promise.resolve(props.params)
+  validateLanguage(params.lang)
+  const translations = await getTranslations(params.lang)
 
   try {
     const products = await client.fetch<ProductDocument[]>(
-      PRODUCTS_QUERY,
-      { lang },
-      { next: { revalidate: 30 } }
+      getProductsQuery,
+      { language: params.lang },
+      { next: { tags: ['product'] } }
     )
 
     if (!products || products.length === 0) {
       return (
         <div className="min-h-screen bg-gray-50">
           <div className="container mx-auto max-w-7xl px-4 py-16">
-            <h1 className="text-4xl font-bold mb-4">{translations.products.pageTitle}</h1>
-            <p className="text-lg text-gray-600 mb-8">
-              {translations.products.pageDescription}
-            </p>
             <div className="bg-white rounded-lg border p-8 text-center">
+              <h1 className="text-4xl font-bold mb-4">{translations.products.pageTitle}</h1>
               <p className="text-gray-600">{translations.common.noResults}</p>
             </div>
           </div>
@@ -116,28 +103,26 @@ export default async function ProductsPage({ params }: Props) {
 
     // Group products by category
     const productsByCategory = products.reduce((acc, product) => {
-      const category = product.category
-      if (!acc[category]) {
-        acc[category] = []
+      if (!acc[product.category]) {
+        acc[product.category] = []
       }
-      acc[category].push(product)
+      acc[product.category].push(product)
       return acc
-    }, {} as Record<string, ProductDocument[]>)
+    }, {} as Record<ProductDocument['category'], ProductDocument[]>)
 
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto max-w-7xl px-4 py-16">
           <div className="mb-12">
             <h1 className="text-4xl font-bold mb-4">{translations.products.pageTitle}</h1>
-            <p className="text-lg text-gray-600">
-              {translations.products.pageDescription}
-            </p>
+            <p className="text-xl text-gray-600">{translations.products.pageDescription}</p>
           </div>
 
+          {/* Products by Category */}
           {Object.entries(productsByCategory).map(([category, products]) => (
             <div key={category} className="mb-16">
-              <h2 className="text-2xl font-semibold mb-8 capitalize">
-                {translations.products.categoryLabels[category as keyof typeof translations.products.categoryLabels]}
+              <h2 className="text-2xl font-bold mb-8 capitalize">
+                {translations.products.categoryLabels[category as ProductDocument['category']]}
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {products.map((product) => {
@@ -145,13 +130,10 @@ export default async function ProductsPage({ params }: Props) {
                     ? urlFor(product.productImage).width(600).height(600).url()
                     : null
 
-                  // Get the first active ingredient from the first variant
-                  const mainIngredient = product.variants?.[0]?.activeIngredients?.[0]
-
                   return (
                     <Link 
                       key={product._id}
-                      href={`/${lang}/products/${product.slug.current}`}
+                      href={`/${params.lang}/products/${product.slug.current}`}
                       className="group"
                     >
                       <article className="h-full border rounded-lg overflow-hidden hover:shadow-lg transition-shadow bg-white">
@@ -181,13 +163,8 @@ export default async function ProductsPage({ params }: Props) {
                             </span>
                           </div>
                           {product.tagline && (
-                            <p className="text-gray-600 text-sm line-clamp-2 mb-2">
+                            <p className="text-gray-600 text-sm line-clamp-2">
                               {product.tagline}
-                            </p>
-                          )}
-                          {mainIngredient && (
-                            <p className="text-sm text-gray-500">
-                              {mainIngredient.name}: {mainIngredient.amount}{mainIngredient.units}
                             </p>
                           )}
                         </div>
@@ -206,19 +183,11 @@ export default async function ProductsPage({ params }: Props) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto max-w-7xl px-4 py-16">
-          <h1 className="text-4xl font-bold mb-8">{translations.products.pageTitle}</h1>
           <div className="bg-white rounded-lg border p-8">
-            <p className="text-red-600">{translations.common.error}</p>
+            <h1 className="text-4xl font-bold mb-8">{translations.common.error}</h1>
           </div>
         </div>
       </div>
     )
   }
-}
-
-// Generate static params for all languages
-export function generateStaticParams() {
-  return languages.map((lang) => ({
-    lang: lang.id
-  }))
 } 

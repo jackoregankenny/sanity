@@ -32,9 +32,17 @@ export default defineType({
   groups: [
     { name: 'basic', title: 'Basic Information', default: true },
     { name: 'details', title: 'Product Details' },
-    { name: 'regulatory', title: 'Regulatory Information' },
-    { name: 'media', title: 'Media' }
+    { name: 'features', title: 'Features & Benefits' },
+    { name: 'variants', title: 'Product Variants' },
+    { name: 'media', title: 'Media' },
+    { name: 'seo', title: 'SEO' }
   ],
+  __experimental_actions: ['create', 'update', 'publish', 'delete'],
+  initialValue: {
+    features: [],
+    benefits: [],
+    variants: []
+  },
   fields: [
     // Basic Information
     defineField({
@@ -60,10 +68,7 @@ export default defineType({
           .toLowerCase()
           .replace(/\s+/g, '-')
           .replace(/[^\w\-]+/g, '')
-          .slice(0, 96),
-        aiAssist: {
-          exclude: true
-        }
+          .slice(0, 96)
       },
       validation: Rule => Rule.required(),
       group: 'basic'
@@ -79,10 +84,7 @@ export default defineType({
           { title: 'Herbicide', value: 'herbicide' },
           { title: 'Fungicide', value: 'fungicide' }
         ],
-        layout: 'radio',
-        aiAssist: {
-          exclude: true
-        }
+        layout: 'radio'
       },
       validation: Rule => Rule.required(),
       group: 'basic'
@@ -114,72 +116,23 @@ export default defineType({
         }
       }
     }),
+    // Features & Benefits
     defineField({
       name: 'features',
       title: 'Key Features',
       type: 'array',
       of: [{
-        type: 'string',
-        options: {
-          aiAssist: {
-            translateAction: true
-          }
-        }
-      }],
-      validation: Rule => Rule.required().min(2),
-      group: 'details'
-    }),
-    defineField({
-      name: 'specifications',
-      title: 'Specifications',
-      type: 'array',
-      of: [{
         type: 'object',
+        name: 'feature',
+        title: 'Feature',
         fields: [
           defineField({
-            name: 'label',
+            name: 'title',
             type: 'string',
+            validation: Rule => Rule.required(),
             options: {
               aiAssist: {
                 translateAction: true
-              }
-            }
-          }),
-          defineField({
-            name: 'value',
-            type: 'string',
-            options: {
-              aiAssist: {
-                translateAction: true
-              }
-            }
-          })
-        ]
-      }],
-      group: 'details'
-    }),
-    defineField({
-      name: 'ingredients',
-      title: 'Active Ingredients',
-      type: 'array',
-      of: [{
-        type: 'object',
-        fields: [
-          defineField({
-            name: 'name',
-            type: 'string',
-            options: {
-              aiAssist: {
-                translateAction: true
-              }
-            }
-          }),
-          defineField({
-            name: 'percentage',
-            type: 'string',
-            options: {
-              aiAssist: {
-                exclude: true
               }
             }
           }),
@@ -187,45 +140,186 @@ export default defineType({
             name: 'description',
             type: 'text',
             rows: 2,
+            validation: Rule => Rule.required(),
             options: {
               aiAssist: {
                 translateAction: true
               }
             }
           })
-        ]
+        ],
+        preview: {
+          select: {
+            title: 'title',
+            description: 'description'
+          },
+          prepare({ title, description }) {
+            return {
+              title: title || 'Untitled Feature',
+              subtitle: description
+            }
+          }
+        }
       }],
-      group: 'details'
+      validation: Rule => Rule.min(2),
+      group: 'features'
     }),
-    // Regulatory Information
+    defineField({
+      name: 'benefits',
+      title: 'Benefits',
+      type: 'array',
+      of: [{
+        type: 'object',
+        name: 'benefit',
+        title: 'Benefit',
+        fields: [
+          defineField({
+            name: 'title',
+            type: 'string',
+            validation: Rule => Rule.required(),
+            options: {
+              aiAssist: {
+                translateAction: true
+              }
+            }
+          }),
+          defineField({
+            name: 'description',
+            type: 'text',
+            rows: 2,
+            validation: Rule => Rule.required(),
+            options: {
+              aiAssist: {
+                translateAction: true
+              }
+            }
+          })
+        ],
+        preview: {
+          select: {
+            title: 'title',
+            description: 'description'
+          },
+          prepare({ title, description }) {
+            return {
+              title: title || 'Untitled Benefit',
+              subtitle: description
+            }
+          }
+        }
+      }],
+      validation: Rule => Rule.min(2),
+      group: 'features'
+    }),
+    // Product Variants
     defineField({
       name: 'variants',
       title: 'Product Variants',
       type: 'array',
-      of: [{ type: 'productVariant' }],
-      validation: Rule => Rule.min(1).unique().error('Each variant must be unique'),
-      group: 'regulatory',
-      options: {
-        aiAssist: {
-          exclude: true
-        }
-      }
-    }),
-    defineField({
-      name: 'documents',
-      title: 'Product Documents',
-      type: 'array',
       of: [{
-        type: 'reference',
-        to: [{ type: 'productDocument' }],
-        options: {
-          filter: 'language == $language',
-          filterParams: {
-            language: '^.language'
-          }
-        }
+        type: 'object',
+        fields: [
+          defineField({
+            name: 'name',
+            type: 'string',
+            validation: Rule => Rule.required(),
+            options: {
+              aiAssist: {
+                translateAction: true
+              }
+            }
+          }),
+          defineField({
+            name: 'sku',
+            type: 'string',
+            validation: Rule => Rule.required()
+          }),
+          defineField({
+            name: 'activeIngredients',
+            type: 'array',
+            of: [{
+              type: 'object',
+              fields: [
+                defineField({
+                  name: 'name',
+                  type: 'string',
+                  validation: Rule => Rule.required()
+                }),
+                defineField({
+                  name: 'amount',
+                  type: 'string',
+                  validation: Rule => Rule.required()
+                }),
+                defineField({
+                  name: 'units',
+                  type: 'string',
+                  options: {
+                    list: [
+                      { title: 'g/L', value: 'g/L' },
+                      { title: 'g/kg', value: 'g/kg' },
+                      { title: '%w/w', value: '%w/w' },
+                      { title: '%w/v', value: '%w/v' }
+                    ]
+                  },
+                  validation: Rule => Rule.required()
+                })
+              ]
+            }],
+            validation: Rule => Rule.required().min(1)
+          }),
+          defineField({
+            name: 'formulationType',
+            type: 'string',
+            options: {
+              list: [
+                { title: 'Soluble Concentrate (SL)', value: 'SL' },
+                { title: 'Emulsifiable Concentrate (EC)', value: 'EC' },
+                { title: 'Suspension Concentrate (SC)', value: 'SC' },
+                { title: 'Wettable Powder (WP)', value: 'WP' },
+                { title: 'Water Dispersible Granules (WG)', value: 'WG' }
+              ]
+            },
+            validation: Rule => Rule.required()
+          }),
+          defineField({
+            name: 'registrationNumber',
+            type: 'string',
+            validation: Rule => Rule.required()
+          }),
+          defineField({
+            name: 'containerSizes',
+            type: 'array',
+            of: [{ type: 'string' }],
+            validation: Rule => Rule.required().min(1)
+          }),
+          defineField({
+            name: 'documents',
+            type: 'array',
+            of: [{
+              type: 'object',
+              fields: [
+                defineField({
+                  name: 'name',
+                  type: 'string',
+                  validation: Rule => Rule.required(),
+                  options: {
+                    aiAssist: {
+                      translateAction: true
+                    }
+                  }
+                }),
+                defineField({
+                  name: 'url',
+                  type: 'url',
+                  validation: Rule => Rule.required()
+                })
+              ]
+            }]
+          })
+        ]
       }],
-      group: 'regulatory'
+      validation: Rule => Rule.min(1).unique().error('Each variant must be unique'),
+      group: 'variants'
     }),
     // Media
     defineField({
@@ -241,6 +335,32 @@ export default defineType({
       type: 'array',
       of: [{ ...imageWithAlt }],
       group: 'media'
+    }),
+    // SEO
+    defineField({
+      name: 'seoTitle',
+      title: 'SEO Title',
+      type: 'string',
+      description: 'Override the default title tag',
+      group: 'seo',
+      options: {
+        aiAssist: {
+          translateAction: true
+        }
+      }
+    }),
+    defineField({
+      name: 'seoDescription',
+      title: 'SEO Description',
+      type: 'text',
+      rows: 3,
+      description: 'Override the default meta description',
+      group: 'seo',
+      options: {
+        aiAssist: {
+          translateAction: true
+        }
+      }
     })
   ],
   preview: {
@@ -257,8 +377,13 @@ export default defineType({
         de: '🇩🇪',
         es: '🇪🇸',
         it: '🇮🇹',
-        'pt-PT': '🇵🇹',
-        'pt-BR': '🇧🇷'
+        pt: '🇵🇹',
+        nl: '🇳🇱',
+        pl: '🇵🇱',
+        hu: '🇭🇺',
+        el: '🇬🇷',
+        ro: '🇷🇴',
+        sk: '🇸🇰'
       } as const
       
       const flag = languageLabels[language as keyof typeof languageLabels] || ''
@@ -268,6 +393,12 @@ export default defineType({
         subtitle,
         media
       }
+    }
+  },
+  hooks: {
+    async beforeDocument(doc: any) {
+      const { documents, specifications, ...rest } = doc
+      return rest
     }
   }
 }) 

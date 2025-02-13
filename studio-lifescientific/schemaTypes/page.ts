@@ -23,7 +23,12 @@ export default defineType({
       title: 'Title',
       type: 'string',
       validation: Rule => Rule.required(),
-      group: 'content'
+      group: 'content',
+      options: {
+        aiAssist: {
+          translateAction: true
+        }
+      }
     }),
     defineField({
       name: 'slug',
@@ -47,48 +52,37 @@ export default defineType({
       type: 'array',
       group: 'content',
       of: [
-        { type: 'hero' },
-        { type: 'features' },
-        { type: 'gallery' },
-        { type: 'video' }
+        { type: 'pageHero' },
+        { type: 'pageFeatures' },
+        { type: 'pageGallery' },
+        { type: 'pageVideo' }
       ],
-      options: {
-        layout: 'grid',
-        insertMenu: {
-          filter: true,
-          groups: [
-            {
-              name: 'content',
-              title: 'Content Blocks',
-              of: ['hero', 'features']
-            },
-            {
-              name: 'media',
-              title: 'Media',
-              of: ['gallery', 'video']
-            }
-          ],
-          views: [
-            { name: 'list' },
-            { 
-              name: 'grid',
-              previewImageUrl: (schemaTypeName) => `/static/preview-${schemaTypeName}.jpg`
-            }
-          ]
-        }
-      }
+      validation: Rule => Rule.required().min(1)
     }),
     defineField({
       name: 'seoTitle',
       title: 'SEO Title',
       type: 'string',
-      group: 'seo'
+      group: 'seo',
+      description: 'Override the default page title for SEO purposes',
+      options: {
+        aiAssist: {
+          translateAction: true
+        }
+      }
     }),
     defineField({
       name: 'seoDescription',
       title: 'SEO Description',
       type: 'text',
-      group: 'seo'
+      rows: 3,
+      group: 'seo',
+      description: 'Override the default meta description for SEO purposes',
+      options: {
+        aiAssist: {
+          translateAction: true
+        }
+      }
     })
   ],
   preview: {
@@ -97,8 +91,20 @@ export default defineType({
       language: 'language'
     },
     prepare({ title, language }) {
+      const languageLabels = {
+        en: '🇬🇧',
+        fr: '🇫🇷',
+        de: '🇩🇪',
+        es: '🇪🇸',
+        it: '🇮🇹',
+        'pt-PT': '🇵🇹',
+        'pt-BR': '🇧🇷'
+      } as const
+      
+      const flag = languageLabels[language as keyof typeof languageLabels] || ''
+      
       return {
-        title: `${title} (${language.toUpperCase()})`
+        title: `${flag} ${title || 'Untitled Page'}`
       }
     }
   }

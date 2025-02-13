@@ -1,7 +1,7 @@
 import { client } from '@/sanity/client'
 import { languages } from '@/config/languages'
 
-type LanguageCode = typeof languages[number]['id']
+export type LanguageCode = typeof languages[number]['id']
 
 interface Translations {
   nav: {
@@ -16,6 +16,30 @@ interface Translations {
       pesticide: string
       herbicide: string
       fungicide: string
+    }
+    sections: {
+      features: string
+      benefits: string
+      variants: string
+      documents: string
+    }
+    labels: {
+      sku: string
+      activeIngredients: string
+      formulationType: string
+      registrationNumber: string
+      containerSizes: string
+      documents: string
+      viewVariants: string
+      viewFeatures: string
+      viewBenefits: string
+    }
+    formulation: {
+      SL: string
+      EC: string
+      SC: string
+      WP: string
+      WG: string
     }
   }
   common: {
@@ -39,6 +63,30 @@ const defaultTranslations: Translations = {
       pesticide: 'Pesticides',
       herbicide: 'Herbicides',
       fungicide: 'Fungicides'
+    },
+    sections: {
+      features: 'Key Features',
+      benefits: 'Benefits',
+      variants: 'Product Variants',
+      documents: 'Documents'
+    },
+    labels: {
+      sku: 'SKU',
+      activeIngredients: 'Active Ingredients',
+      formulationType: 'Formulation Type',
+      registrationNumber: 'Registration Number',
+      containerSizes: 'Container Sizes',
+      documents: 'Documents',
+      viewVariants: 'View Variants',
+      viewFeatures: 'Key Features',
+      viewBenefits: 'Benefits'
+    },
+    formulation: {
+      SL: 'Soluble Concentrate',
+      EC: 'Emulsifiable Concentrate',
+      SC: 'Suspension Concentrate',
+      WP: 'Wettable Powder',
+      WG: 'Water Dispersible Granules'
     }
   },
   common: {
@@ -75,7 +123,10 @@ export async function getTranslations(lang: LanguageCode): Promise<Translations>
           categoryLabels: {
             ...defaultTranslations.products.categoryLabels,
             ...translations.products.categoryLabels
-          }
+          },
+          sections: { ...defaultTranslations.products.sections, ...translations.products.sections },
+          labels: { ...defaultTranslations.products.labels, ...translations.products.labels },
+          formulation: { ...defaultTranslations.products.formulation, ...translations.products.formulation }
         },
         common: { ...defaultTranslations.common, ...translations.common }
       }
@@ -100,7 +151,10 @@ export async function getTranslations(lang: LanguageCode): Promise<Translations>
             categoryLabels: {
               ...defaultTranslations.products.categoryLabels,
               ...englishTranslations.products.categoryLabels
-            }
+            },
+            sections: { ...defaultTranslations.products.sections, ...englishTranslations.products.sections },
+            labels: { ...defaultTranslations.products.labels, ...englishTranslations.products.labels },
+            formulation: { ...defaultTranslations.products.formulation, ...englishTranslations.products.formulation }
           },
           common: { ...defaultTranslations.common, ...englishTranslations.common }
         }

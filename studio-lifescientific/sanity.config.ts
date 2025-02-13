@@ -12,15 +12,15 @@ import { languages, getDefaultLanguage } from './config/languages'
 export default defineConfig({
   name: 'default',
   title: 'Life Scientific',
-  projectId: 'wfaq7tu4',
-  dataset: 'production',
+  projectId: process.env.SANITY_STUDIO_PROJECT_ID!,
+  dataset: process.env.SANITY_STUDIO_DATASET!,
   plugins: [
     deskTool({
-      structure: (S) => 
-        S.list()
+      structure: (S) => {
+        return S.list()
           .title('Content')
           .items([
-            // Products list
+            // Products
             S.listItem()
               .title('Products')
               .child(
@@ -29,37 +29,81 @@ export default defineConfig({
                   .items([
                     S.listItem()
                       .title('All Products')
-                      .schemaType('product')
                       .child(
                         S.documentList()
                           .title('All Products')
-                          .filter('_type == "product" && language == "en"')
-                          .defaultOrdering([{field: 'name', direction: 'asc'}])
+                          .filter('_type == "product"')
                       ),
+                    S.divider(),
+                    ...languages.map(lang => 
+                      S.listItem()
+                        .title(`${lang.title} Products`)
+                        .child(
+                          S.documentList()
+                            .title(`${lang.title} Products`)
+                            .filter('_type == "product" && language == $lang')
+                            .params({ lang: lang.id })
+                        )
+                    )
                   ])
               ),
-            // Other document types
-            ...S.documentTypeListItems()
-              .filter(item => 
-                !['product'].includes(item.getId() as string) && 
-                item.getId() !== contextDocumentTypeName
+            // Pages
+            S.listItem()
+              .title('Pages')
+              .child(
+                S.list()
+                  .title('Pages')
+                  .items([
+                    S.listItem()
+                      .title('All Pages')
+                      .child(
+                        S.documentList()
+                          .title('All Pages')
+                          .filter('_type == "page"')
+                      ),
+                    S.divider(),
+                    ...languages.map(lang => 
+                      S.listItem()
+                        .title(`${lang.title} Pages`)
+                        .child(
+                          S.documentList()
+                            .title(`${lang.title} Pages`)
+                            .filter('_type == "page" && language == $lang')
+                            .params({ lang: lang.id })
+                        )
+                    )
+                  ])
               ),
-            // AI Instructions
-            S.documentTypeListItem(contextDocumentTypeName)
-              .title('AI Instructions')
+            // Tools & Services
+            S.listItem()
+              .title('Tools & Services')
+              .child(
+                S.documentList()
+                  .title('Tools & Services')
+                  .filter('_type == "recommendedTool"')
+              ),
+            // Translations
+            S.listItem()
+              .title('Translations')
+              .child(
+                S.documentList()
+                  .title('Translations')
+                  .filter('_type == "translations"')
+              )
           ])
+      }
     }),
     visionTool(),
     documentInternationalization({
       supportedLanguages: languages.map(({id, title}) => ({id, title})),
-      schemaTypes: ['product', 'post'],
+      schemaTypes: ['product'],
       weakReferences: true
     }),
     assist({
       translate: {
         document: {
           languageField: 'language',
-          documentTypes: ['product', 'post']
+          documentTypes: ['product']
         }
       }
     })

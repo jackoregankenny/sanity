@@ -1,10 +1,17 @@
 import { type SanityDocument } from "next-sanity"
 import { client } from "@/sanity/client"
-import { urlFor } from "@/sanity/image"
 import { notFound } from "next/navigation"
-import { type LanguageCode, languages } from "@/config/languages"
-import Image from "next/image"
+import { type LanguageCode } from "@/hooks/useTranslations"
+import { getTranslations } from "@/hooks/useTranslations"
+import { languages } from "@/config/languages"
 import { Metadata } from "next"
+import Image from "next/image"
+import { urlFor } from "@/sanity/image"
+import { Check } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 
 interface ActiveIngredient {
   name: string
@@ -12,92 +19,69 @@ interface ActiveIngredient {
   units: string
 }
 
-interface ProductVariant {
+interface ProductDocument extends SanityDocument {
   name: string
-  activeIngredients: ActiveIngredient[]
-}
-
-interface ProductDocument {
-  documentType: 'sds' | 'label' | 'technical' | 'registration'
-  file: {
-    asset: {
-      url: string
-    }
-  }
-}
-
-interface Product extends SanityDocument {
-  name: string
-  tagline: string
   description: string
+  tagline?: string
   category: 'pesticide' | 'herbicide' | 'fungicide'
-  features: string[]
-  specifications: Array<{
-    label: string
-    value: string
-  }>
-  ingredients: Array<{
+  variants: Array<{
     name: string
-    percentage: string
+    sku: string
+    formulationType: keyof typeof formulationTypes
+    registrationNumber: string
+    containerSizes: string[]
+    activeIngredients: ActiveIngredient[]
+    documents?: Array<{
+      name: string
+      url: string
+    }>
+  }>
+  features?: Array<{
+    title: string
     description: string
   }>
-  variants: ProductVariant[]
+  benefits?: Array<{
+    title: string
+    description: string
+  }>
   productImage?: {
     asset: {
       _ref: string
     }
     alt?: string
   }
-  gallery?: Array<{
-    asset: {
-      _ref: string
-    }
-    alt?: string
-  }>
-  documents?: ProductDocument[]
-}
-
-interface ProductPage extends SanityDocument {
-  product: Product
-  seoTitle?: string
-  seoDescription?: string
-  uiText: {
-    variantsTitle: string
-    documentsTitle: string
-    documentLabels: {
-      sds: string
-      label: string
-      technical: string
-      registration: string
-    }
-    variantLabels: {
-      ingredients: string
-      formulation: string
-      registration: string
-      containers: string
-    }
-    buttonLabels: {
-      download: string
-      viewMore: string
-    }
-  }
 }
 
 interface Props {
   params: {
-    lang: LanguageCode
+    lang: string
     slug: string
   }
 }
 
-// Generate metadata
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  // Validate params first
-  const { lang, slug } = await validateParams(params)
+const formulationTypes = {
+  SL: 'Soluble Concentrate',
+  EC: 'Emulsifiable Concentrate',
+  SC: 'Suspension Concentrate',
+  WP: 'Wettable Powder',
+  WG: 'Water Dispersible Granules'
+} as const
 
-  const product = await client.fetch<Product | null>(
-    PRODUCT_QUERY,
-    { slug, lang }
+// Validate the language parameter
+function validateLanguage(lang: string): asserts lang is LanguageCode {
+  if (!languages.some(l => l.id === lang)) {
+    notFound()
+  }
+}
+
+// Generate metadata
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await Promise.resolve(props.params)
+  validateLanguage(params.lang)
+
+  const product = await client.fetch<ProductDocument | null>(
+    `*[_type == "product" && slug.current == $slug && language == $lang][0]`,
+    { slug: params.slug, lang: params.lang }
   )
 
   if (!product) {
@@ -107,163 +91,179 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   return {
-    title: `${product.name} | Life Scientific`,
-    description: product.tagline,
+    title: product.name,
+    description: product.tagline
   }
 }
 
-// Query to get a single product
-const PRODUCT_QUERY = `*[
-  _type == "product" && 
-  slug.current == $slug && 
-  language == $lang
-][0] {
-  _id,
-  _type,
-  name,
-  tagline,
-  description,
-  category,
-  features,
-  specifications,
-  ingredients,
-  variants[] {
-    name,
-    activeIngredients[] {
-      name,
-      amount,
-      units
-    }
-  },
-  productImage,
-  gallery,
-  "documents": *[_type == "productDocument" && references(^._id)] {
-    documentType,
-    "file": file.asset->
-  }
-}`
-
-// Validate params before using them
-async function validateParams(params: Props['params']) {
-  const { lang, slug } = params
-  if (!languages.some(l => l.id === lang)) {
-    notFound()
-  }
-  return { lang, slug }
+// Add a helper function to group variants by region
+function groupVariantsByRegion(variants: ProductDocument['variants']) {
+  return variants.reduce((acc, variant) => {
+    acc[variant.name] = variant;
+    return acc;
+  }, {} as Record<string, ProductDocument['variants'][0]>);
 }
 
-export default async function ProductPage({ params }: Props) {
-  // Validate params first
-  const { lang, slug } = await validateParams(params)
+export default async function ProductPage(props: Props) {
+  const params = await Promise.resolve(props.params)
+  validateLanguage(params.lang)
+  const translations = await getTranslations(params.lang)
 
   try {
-    const product = await client.fetch<Product | null>(
-      PRODUCT_QUERY,
-      { slug, lang },
-      { next: { revalidate: 30 } }
+    const product = await client.fetch<ProductDocument | null>(
+      `*[_type == "product" && slug.current == $slug && language == $lang][0]`,
+      { slug: params.slug, lang: params.lang },
+      { next: { tags: ['product'] } }
     )
 
     if (!product) {
       notFound()
     }
 
-    const imageUrl = product.productImage?.asset?._ref
-      ? urlFor(product.productImage).width(1200).height(800).url()
-      : null
+    const variantsByRegion = groupVariantsByRegion(product.variants);
+    const regions = Object.keys(variantsByRegion);
+    const defaultRegion = regions[0];
 
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Hero Section */}
-        <section className="bg-white border-b">
-          <div className="container mx-auto max-w-7xl px-4 py-16">
-            <div className="grid lg:grid-cols-2 gap-12 items-start">
-              {/* Image Gallery */}
-              <div className="space-y-4">
-                <div className="relative aspect-4/3 rounded-lg overflow-hidden bg-gray-100">
-                  {imageUrl ? (
-                    <Image
-                      src={imageUrl}
-                      alt={product.productImage?.alt || product.name}
-                      fill
-                      className="object-cover"
-                      priority
-                      sizes="(min-width: 1024px) 50vw, 100vw"
-                    />
-                  ) : (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-gray-400">No image available</span>
+        <div className="bg-white border-b">
+          <div className="container max-w-[80%] mx-auto px-4 py-16">
+            <div className="grid lg:grid-cols-2 gap-16 items-start">
+              {/* Product Image */}
+              <div className="order-2 lg:order-1 sticky top-24">
+                <Card className="border-0 shadow-lg">
+                  <CardContent className="p-8">
+                    {product.productImage?.asset?._ref ? (
+                      <div className="relative aspect-square bg-white rounded-xl overflow-hidden">
+                        <Image
+                          src={urlFor(product.productImage).width(800).height(800).url()}
+                          alt={product.productImage.alt || product.name}
+                          fill
+                          className="object-contain"
+                          priority
+                        />
+                      </div>
+                    ) : (
+                      <div className="aspect-square bg-gray-100 rounded-xl flex items-center justify-center">
+                        <span className="text-gray-400">{translations.common.noResults}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Product Overview */}
+              <div className="flex flex-col order-1 lg:order-2 lg:pl-8">
+                <div className="mb-8">
+                  <Badge variant="secondary" className="mb-6 capitalize text-sm px-3 py-1">
+                    {translations.products.categoryLabels[product.category]}
+                  </Badge>
+                  <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
+                  {product.tagline && (
+                    <p className="text-xl text-muted-foreground font-medium">{product.tagline}</p>
+                  )}
+                </div>
+
+                <Separator className="mb-8" />
+
+                {/* Quick Overview */}
+                <div className="prose prose-gray max-w-none mb-8">
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {product.description}
+                  </p>
+                </div>
+
+                {/* Features & Benefits Summary */}
+                <div className="space-y-8">
+                  {/* Features Summary */}
+                  {product.features && product.features.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-xl">Key Features</h3>
+                      <div className="grid gap-4">
+                        {product.features.slice(0, 2).map((feature, index) => (
+                          <div key={index} className="flex items-start gap-4">
+                            <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                            <div>
+                              <h4 className="font-medium mb-1">{feature.title}</h4>
+                              <p className="text-muted-foreground">{feature.description}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Benefits Summary */}
+                  {product.benefits && product.benefits.length > 0 && (
+                    <div className="space-y-4">
+                      <h3 className="font-semibold text-xl">Key Benefits</h3>
+                      <div className="grid gap-4">
+                        {product.benefits.slice(0, 2).map((benefit, index) => (
+                          <div key={index} className="flex items-start gap-4">
+                            <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                            <div>
+                              <h4 className="font-medium mb-1">{benefit.title}</h4>
+                              <p className="text-muted-foreground">{benefit.description}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
-                {product.gallery && product.gallery.length > 0 && (
-                  <div className="grid grid-cols-4 gap-4">
-                    {product.gallery.map((image, index) => (
-                      <div
-                        key={index}
-                        className="relative aspect-square rounded-lg overflow-hidden bg-gray-100"
-                      >
-                        <Image
-                          src={urlFor(image).width(200).height(200).url()}
-                          alt={image.alt || `${product.name} gallery image ${index + 1}`}
-                          fill
-                          className="object-cover hover:scale-110 transition-transform"
-                          sizes="(min-width: 1024px) 12.5vw, 25vw"
-                        />
-                      </div>
-                    ))}
-                  </div>
+
+                {/* View All Features & Benefits Button */}
+                {((product.features && product.features.length > 2) || (product.benefits && product.benefits.length > 2)) && (
+                  <button
+                    onClick={() => document.getElementById('features-benefits')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="mt-8 text-primary hover:text-primary/80 text-sm font-medium transition-colors inline-flex items-center gap-2"
+                  >
+                    View All Features & Benefits
+                    <span className="text-lg">→</span>
+                  </button>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
 
-              {/* Content */}
-              <div className="flex flex-col gap-6">
-                <div>
-                  <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700 capitalize mb-4">
-                    {product.category}
-                  </span>
-                  <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
-                  <p className="text-xl text-gray-600">{product.tagline}</p>
-                </div>
-
-                <div className="prose prose-gray max-w-none">
-                  <p>{product.description}</p>
-                </div>
-
-                {/* Features */}
+        {/* Features & Benefits Full Section */}
+        {((product.features && product.features.length > 0) || (product.benefits && product.benefits.length > 0)) && (
+          <div id="features-benefits" className="bg-white border-b">
+            <div className="container max-w-[80%] mx-auto px-4 py-16">
+              <div className="space-y-16">
+                {/* All Features */}
                 {product.features && product.features.length > 0 && (
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4">Key Features</h2>
-                    <ul className="space-y-2">
+                  <div className="space-y-8">
+                    <h2 className="text-2xl font-bold">Key Features</h2>
+                    <div className="grid md:grid-cols-2 gap-8">
                       {product.features.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <svg className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className="text-gray-700">{feature}</span>
-                        </li>
+                        <div key={index} className="flex items-start gap-4 p-6 bg-muted rounded-xl">
+                          <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                          <div>
+                            <h3 className="text-lg font-medium mb-2">{feature.title}</h3>
+                            <p className="text-muted-foreground">{feature.description}</p>
+                          </div>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                 )}
 
-                {/* Documents */}
-                {product.documents && product.documents.length > 0 && (
-                  <div>
-                    <h2 className="text-xl font-semibold mb-4">Product Documents</h2>
-                    <div className="flex flex-wrap gap-4">
-                      {product.documents.map((doc, index) => (
-                        <a
-                          key={index}
-                          href={doc.file.asset.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                          </svg>
-                          {doc.documentType.toUpperCase()}
-                        </a>
+                {/* All Benefits */}
+                {product.benefits && product.benefits.length > 0 && (
+                  <div className="space-y-8">
+                    <h2 className="text-2xl font-bold">Benefits</h2>
+                    <div className="grid md:grid-cols-2 gap-8">
+                      {product.benefits.map((benefit, index) => (
+                        <div key={index} className="flex items-start gap-4 p-6 bg-muted rounded-xl">
+                          <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                          <div>
+                            <h4 className="font-medium mb-2">{benefit.title}</h4>
+                            <p className="text-muted-foreground">{benefit.description}</p>
+                          </div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -271,84 +271,127 @@ export default async function ProductPage({ params }: Props) {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* Specifications Section */}
-        {product.specifications && product.specifications.length > 0 && (
-          <section className="bg-white border-b">
-            <div className="container mx-auto max-w-7xl px-4 py-16">
-              <h2 className="text-3xl font-bold mb-8">Specifications</h2>
-              <div className="bg-gray-50 rounded-lg overflow-hidden">
-                <div className="grid divide-y divide-gray-200">
-                  {product.specifications.map((spec, index) => (
-                    <div key={index} className="grid grid-cols-3 p-4">
-                      <dt className="font-medium text-gray-500">{spec.label}</dt>
-                      <dd className="col-span-2 text-gray-900">{spec.value}</dd>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
         )}
 
-        {/* Ingredients Section */}
-        {product.ingredients && product.ingredients.length > 0 && (
-          <section className="bg-white border-b">
-            <div className="container mx-auto max-w-7xl px-4 py-16">
-              <h2 className="text-3xl font-bold mb-8">Active Ingredients</h2>
-              <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-                {product.ingredients.map((ingredient, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-6">
-                    <div className="flex items-baseline justify-between gap-4 mb-4">
-                      <h3 className="font-semibold text-lg">{ingredient.name}</h3>
-                      <span className="text-sm font-medium bg-blue-50 text-blue-700 px-2 py-1 rounded">
-                        {ingredient.percentage}
-                      </span>
+        {/* Main Content - Regional Variants */}
+        <div className="container max-w-[80%] mx-auto px-4 py-16">
+          <Tabs defaultValue={defaultRegion} className="space-y-8">
+            <TabsList className="w-full justify-start bg-transparent p-0 rounded-none border-b">
+              {regions.map((region) => (
+                <TabsTrigger
+                  key={region}
+                  value={region}
+                  className="data-[state=active]:border-primary data-[state=active]:bg-transparent border-b-2 border-transparent rounded-none px-8"
+                >
+                  {region}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {/* Region Tabs */}
+            {regions.map((region) => {
+              const variant = variantsByRegion[region];
+              
+              return (
+                <TabsContent key={region} value={region} className="space-y-8">
+                  <div className="grid md:grid-cols-3 gap-8">
+                    {/* Product Details */}
+                    <div className="md:col-span-2">
+                      <Card>
+                        <CardHeader className="pb-6">
+                          <CardTitle>Product Details</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-8">
+                          <div>
+                            <h4 className="text-sm font-medium mb-3">Registration Information</h4>
+                            <div className="grid gap-3">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">SKU</span>
+                                <span className="font-medium">{variant.sku}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Registration Number</span>
+                                <span className="font-medium">{variant.registrationNumber}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Formulation Type</span>
+                                <span className="font-medium">{formulationTypes[variant.formulationType]}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div>
+                            <h4 className="text-sm font-medium mb-3">Available Pack Sizes</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {variant.containerSizes.map((size, idx) => (
+                                <Badge key={idx} variant="secondary">
+                                  {size}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Active Ingredients */}
+                          <div>
+                            <h4 className="text-sm font-medium mb-3">Active Ingredients</h4>
+                            <div className="grid gap-3">
+                              {variant.activeIngredients.map((ingredient, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                                  <span className="font-medium">{ingredient.name}</span>
+                                  <Badge variant="secondary">
+                                    {ingredient.amount} {ingredient.units}
+                                  </Badge>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
                     </div>
-                    <p className="text-gray-600">{ingredient.description}</p>
+
+                    {/* Documents Section - Right Column */}
+                    {variant.documents && variant.documents.length > 0 && (
+                      <div>
+                        <Card>
+                          <CardHeader className="pb-6">
+                            <CardTitle>Product Documents</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid gap-3">
+                              {variant.documents.map((doc, idx) => (
+                                <a
+                                  key={idx}
+                                  href={doc.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-between p-4 bg-muted rounded-lg hover:bg-primary/5 transition-colors group"
+                                >
+                                  <span className="font-medium group-hover:text-primary transition-colors">
+                                    {doc.name.toUpperCase()}
+                                  </span>
+                                  <span className="text-primary">→</span>
+                                </a>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* Variants Section */}
-        {product.variants && product.variants.length > 0 && (
-          <section className="bg-white">
-            <div className="container mx-auto max-w-7xl px-4 py-16">
-              <h2 className="text-3xl font-bold mb-8">Product Variants</h2>
-              <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-                {product.variants.map((variant, index) => (
-                  <div key={index} className="bg-gray-50 rounded-lg p-6">
-                    <h3 className="font-semibold text-lg mb-4">{variant.name}</h3>
-                    <div className="space-y-3">
-                      {variant.activeIngredients.map((ingredient, idx) => (
-                        <div key={idx} className="flex items-baseline justify-between gap-2">
-                          <span className="text-gray-700">{ingredient.name}</span>
-                          <span className="text-sm font-medium text-gray-500">
-                            {ingredient.amount}{ingredient.units}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
+                </TabsContent>
+              );
+            })}
+          </Tabs>
+        </div>
       </div>
     )
   } catch (error) {
     console.error('Error fetching product:', error)
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="container mx-auto max-w-7xl px-4 py-16">
-          <div className="bg-white rounded-lg border p-8">
-            <h1 className="text-4xl font-bold mb-4">Error</h1>
-            <p className="text-red-600">Error loading product. Please try again later.</p>
+        <div className="container max-w-[80%] mx-auto px-4 py-16">
+          <div className="bg-white rounded-xl border p-8">
+            <h1 className="text-4xl font-bold mb-8">{translations.common.error}</h1>
           </div>
         </div>
       </div>
