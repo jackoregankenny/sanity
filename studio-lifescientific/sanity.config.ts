@@ -7,16 +7,7 @@ import {schemaTypes} from './schemaTypes'
 import {structure} from './deskStructure'
 import CopyFromSourceAction from './actions/copyFromSource'
 import {DocumentActionComponent, DocumentActionsContext} from 'sanity'
-
-const supportedLanguages = [
-  { id: 'en', title: 'English' },
-  { id: 'fr', title: 'French' },
-  { id: 'de', title: 'German' },
-  { id: 'es', title: 'Spanish' },
-  { id: 'it', title: 'Italian' },
-  { id: 'pt-PT', title: 'Portuguese (European)' },
-  { id: 'pt-BR', title: 'Portuguese (Brazilian)' }
-]
+import { languages, getDefaultLanguage } from './config/languages'
 
 export default defineConfig({
   name: 'default',
@@ -60,7 +51,7 @@ export default defineConfig({
     }),
     visionTool(),
     documentInternationalization({
-      supportedLanguages,
+      supportedLanguages: languages.map(({id, title}) => ({id, title})),
       schemaTypes: ['product', 'post'],
       weakReferences: true
     }),

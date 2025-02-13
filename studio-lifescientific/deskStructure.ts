@@ -1,176 +1,128 @@
-import {ListItemBuilder, StructureBuilder} from 'sanity/desk'
+import { ListItemBuilder, StructureBuilder } from 'sanity/desk'
+import { 
+  BasketIcon, 
+  DocumentIcon, 
+  EditIcon,
+  ComposeIcon,
+  UsersIcon,
+  TagIcon,
+  ComponentIcon,
+  CogIcon,
+  TranslateIcon,
+  HomeIcon,
+  ControlsIcon
+} from '@sanity/icons'
+import { languages } from './config/languages'
+
+// Helper function to create a language-filtered list
+const createLanguageFilteredList = (S: StructureBuilder, type: string, title: string, lang: string) =>
+  S.documentList()
+    .title(title)
+    .filter('_type == $type && language == $lang')
+    .params({ type, lang })
 
 export const structure = (S: StructureBuilder) =>
   S.list()
     .title('Content')
     .items([
-      // Products list
+      // Products
       S.listItem()
         .title('Products')
+        .icon(BasketIcon)
         .child(
           S.list()
-            .title('Products')
-            .items([
-              // English Products (Originals)
-              S.listItem()
-                .title('Original Products')
-                .child(
-                  S.documentList()
-                    .title('Original Products')
-                    .filter('_type == "product" && language == "en" && !defined(translations.en)')
-                    .defaultOrdering([{field: 'name', direction: 'asc'}])
-                ),
-              // Product Translations
-              S.listItem()
-                .title('Translations')
-                .child(
-                  S.list()
-                    .title('Products by Language')
-                    .items([
-                      S.listItem()
-                        .title('French Products')
-                        .child(
-                          S.documentList()
-                            .title('French Products')
-                            .filter('_type == "product" && language == "fr"')
-                            .defaultOrdering([{field: 'name', direction: 'asc'}])
-                        ),
-                      S.listItem()
-                        .title('German Products')
-                        .child(
-                          S.documentList()
-                            .title('German Products')
-                            .filter('_type == "product" && language == "de"')
-                            .defaultOrdering([{field: 'name', direction: 'asc'}])
-                        ),
-                      S.listItem()
-                        .title('Spanish Products')
-                        .child(
-                          S.documentList()
-                            .title('Spanish Products')
-                            .filter('_type == "product" && language == "es"')
-                            .defaultOrdering([{field: 'name', direction: 'asc'}])
-                        ),
-                      S.listItem()
-                        .title('Italian Products')
-                        .child(
-                          S.documentList()
-                            .title('Italian Products')
-                            .filter('_type == "product" && language == "it"')
-                            .defaultOrdering([{field: 'name', direction: 'asc'}])
-                        ),
-                      S.listItem()
-                        .title('Portuguese Products')
-                        .child(
-                          S.documentList()
-                            .title('Portuguese Products')
-                            .filter('_type == "product" && language == "pt"')
-                            .defaultOrdering([{field: 'name', direction: 'asc'}])
-                        ),
-                    ])
-                ),
-              // View All Products
-              S.listItem()
-                .title('All Products')
-                .child(
-                  S.documentList()
-                    .title('All Products')
-                    .filter('_type == "product"')
-                    .defaultOrdering([{field: 'name', direction: 'asc'}])
-                )
-            ])
+            .title('Products by Language')
+            .items(
+              languages.map(language => 
+                S.listItem()
+                  .title(`${language.flag} ${language.title}`)
+                  .child(
+                    createLanguageFilteredList(S, 'product', `Products (${language.title})`, language.id)
+                  )
+              )
+            )
         ),
-      // Blog Section
+
+      // Pages
+      S.listItem()
+        .title('Pages')
+        .icon(DocumentIcon)
+        .child(
+          S.list()
+            .title('Pages by Language')
+            .items(
+              languages.map(language => 
+                S.listItem()
+                  .title(`${language.flag} ${language.title}`)
+                  .child(
+                    createLanguageFilteredList(S, 'page', `Pages (${language.title})`, language.id)
+                  )
+              )
+            )
+        ),
+
+      // Blog
       S.listItem()
         .title('Blog')
+        .icon(ComposeIcon)
         .child(
           S.list()
-            .title('Blog')
+            .title('Blog Content')
             .items([
-              // Original Posts
-              S.listItem()
-                .title('Original Posts')
-                .child(
-                  S.documentList()
-                    .title('Original Posts')
-                    .filter('_type == "post" && language == "en" && !defined(translations.en)')
-                    .defaultOrdering([{field: 'publishedAt', direction: 'desc'}])
-                ),
-              // Post Translations
-              S.listItem()
-                .title('Translations')
-                .child(
-                  S.list()
-                    .title('Posts by Language')
-                    .items([
-                      S.listItem()
-                        .title('French Posts')
-                        .child(
-                          S.documentList()
-                            .title('French Posts')
-                            .filter('_type == "post" && language == "fr"')
-                            .defaultOrdering([{field: 'publishedAt', direction: 'desc'}])
-                        ),
-                      S.listItem()
-                        .title('German Posts')
-                        .child(
-                          S.documentList()
-                            .title('German Posts')
-                            .filter('_type == "post" && language == "de"')
-                            .defaultOrdering([{field: 'publishedAt', direction: 'desc'}])
-                        ),
-                      S.listItem()
-                        .title('Spanish Posts')
-                        .child(
-                          S.documentList()
-                            .title('Spanish Posts')
-                            .filter('_type == "post" && language == "es"')
-                            .defaultOrdering([{field: 'publishedAt', direction: 'desc'}])
-                        ),
-                      S.listItem()
-                        .title('Italian Posts')
-                        .child(
-                          S.documentList()
-                            .title('Italian Posts')
-                            .filter('_type == "post" && language == "it"')
-                            .defaultOrdering([{field: 'publishedAt', direction: 'desc'}])
-                        ),
-                      S.listItem()
-                        .title('Portuguese Posts')
-                        .child(
-                          S.documentList()
-                            .title('Portuguese Posts')
-                            .filter('_type == "post" && language == "pt"')
-                            .defaultOrdering([{field: 'publishedAt', direction: 'desc'}])
-                        ),
-                    ])
-                ),
-              // View All Posts
-              S.listItem()
-                .title('All Posts')
-                .child(
-                  S.documentList()
-                    .title('All Posts')
-                    .filter('_type == "post"')
-                    .defaultOrdering([{field: 'publishedAt', direction: 'desc'}])
-                ),
-              // Authors
+              ...languages.map(language => 
+                S.listItem()
+                  .title(`${language.flag} Posts`)
+                  .child(
+                    createLanguageFilteredList(S, 'post', `Posts (${language.title})`, language.id)
+                  )
+              ),
               S.listItem()
                 .title('Authors')
+                .icon(UsersIcon)
                 .child(
                   S.documentList()
                     .title('Authors')
                     .filter('_type == "author"')
-                    .defaultOrdering([{field: 'name', direction: 'asc'}])
-                ),
-              // Categories
+                )
+            ])
+        ),
+
+      S.divider(),
+
+      // Components
+      S.listItem()
+        .title('Components')
+        .icon(ComponentIcon)
+        .child(
+          S.documentList()
+            .title('Reusable Components')
+            .filter('_type == "component" || _type == "callToAction"')
+        ),
+
+      // Settings
+      S.listItem()
+        .title('Settings')
+        .icon(ControlsIcon)
+        .child(
+          S.list()
+            .title('Settings')
+            .items([
               S.listItem()
-                .title('Categories')
+                .title('Translation Settings')
+                .icon(TranslateIcon)
+                .child(
+                  S.editor()
+                    .id('translationMetadata')
+                    .schemaType('translationMetadata')
+                    .documentId('translationMetadata')
+                ),
+              S.listItem()
+                .title('Tools & Services')
+                .icon(CogIcon)
                 .child(
                   S.documentList()
-                    .title('Categories')
-                    .filter('_type == "category"')
-                    .defaultOrdering([{field: 'title', direction: 'asc'}])
+                    .title('Recommended Tools')
+                    .filter('_type == "recommendedTool"')
                 )
             ])
         )

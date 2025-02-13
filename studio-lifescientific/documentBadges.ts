@@ -1,28 +1,18 @@
+import { getLanguageBadge } from './config/languages'
+
 interface Document {
   _type: string
   language: string
 }
 
-export const badges = {
-  product: (doc: Document) => getBadges(doc),
-  post: (doc: Document) => getBadges(doc)
-}
-
-function getBadges(doc: Document) {
+export const badges = (document: Document) => {
   const badges = []
 
-  if (doc.language === 'en') {
-    badges.push({
-      label: 'Original',
-      title: 'Original English Version',
-      color: 'success'
-    })
-  } else {
-    badges.push({
-      label: `Translation (${doc.language.toUpperCase()})`,
-      title: `Translated version in ${doc.language.toUpperCase()}`,
-      color: 'primary'
-    })
+  if (document.language) {
+    const languageBadge = getLanguageBadge(document.language)
+    if (languageBadge) {
+      badges.push(languageBadge)
+    }
   }
 
   return badges

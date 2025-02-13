@@ -1,80 +1,155 @@
-import { defineField, defineType } from '@sanity/types'
+import { defineField, defineType } from 'sanity'
 
 export default defineType({
   name: 'productVariant',
   title: 'Product Variant',
   type: 'object',
+  groups: [
+    { name: 'basic', title: 'Basic Information', default: true },
+    { name: 'ingredients', title: 'Active Ingredients' },
+    { name: 'regulatory', title: 'Regulatory Information' }
+  ],
   fields: [
     defineField({
-      name: 'country',
-      title: 'Country',
+      name: 'name',
+      title: 'Variant Name',
       type: 'string',
+      validation: Rule => Rule.required(),
+      group: 'basic',
       options: {
-        list: [
-          { title: 'Ireland', value: 'IE' },
-          { title: 'United Kingdom', value: 'UK' }
-        ]
+        aiAssist: {
+          translateAction: true
+        }
       }
     }),
     defineField({
-      name: 'crop',
-      title: 'Crop',
+      name: 'sku',
+      title: 'SKU',
       type: 'string',
-      validation: rule => rule.required()
+      validation: Rule => Rule.required(),
+      group: 'basic',
+      options: {
+        aiAssist: {
+          exclude: true
+        }
+      }
     }),
     defineField({
-      name: 'cropGroup',
-      title: 'Crop Group',
-      type: 'string'
-    }),
-    defineField({
-      name: 'approvalNumber',
-      title: 'Approval Number',
-      type: 'string'
+      name: 'activeIngredients',
+      title: 'Active Ingredients',
+      type: 'array',
+      of: [{
+        type: 'object',
+        fields: [
+          defineField({
+            name: 'name',
+            title: 'Ingredient Name',
+            type: 'string',
+            validation: Rule => Rule.required(),
+            options: {
+              aiAssist: {
+                translateAction: true
+              }
+            }
+          }),
+          defineField({
+            name: 'amount',
+            title: 'Amount',
+            type: 'string',
+            validation: Rule => Rule.required(),
+            options: {
+              aiAssist: {
+                exclude: true
+              }
+            }
+          }),
+          defineField({
+            name: 'units',
+            title: 'Units',
+            type: 'string',
+            options: {
+              list: [
+                { title: 'g/L', value: 'g/L' },
+                { title: 'g/kg', value: 'g/kg' },
+                { title: '%w/w', value: '%w/w' },
+                { title: '%w/v', value: '%w/v' }
+              ],
+              aiAssist: {
+                exclude: true
+              }
+            },
+            validation: Rule => Rule.required()
+          })
+        ]
+      }],
+      validation: Rule => Rule.required().min(1),
+      group: 'ingredients',
+      options: {
+        aiAssist: {
+          exclude: true
+        }
+      }
     }),
     defineField({
       name: 'formulationType',
       title: 'Formulation Type',
-      type: 'string'
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Soluble Concentrate (SL)', value: 'SL' },
+          { title: 'Emulsifiable Concentrate (EC)', value: 'EC' },
+          { title: 'Suspension Concentrate (SC)', value: 'SC' },
+          { title: 'Wettable Powder (WP)', value: 'WP' },
+          { title: 'Water Dispersible Granules (WG)', value: 'WG' }
+        ],
+        aiAssist: {
+          exclude: true
+        }
+      },
+      validation: Rule => Rule.required(),
+      group: 'regulatory'
     }),
     defineField({
-      name: 'mechanismOfAction',
-      title: 'Mechanism of Action',
-      type: 'string'
+      name: 'registrationNumber',
+      title: 'Registration Number',
+      type: 'string',
+      validation: Rule => Rule.required(),
+      group: 'regulatory',
+      options: {
+        aiAssist: {
+          exclude: true
+        }
+      }
     }),
     defineField({
-      name: 'containerSize',
-      title: 'Container Size',
-      type: 'string'
-    }),
-    defineField({
-      name: 'sizeUnit',
-      title: 'Size Unit',
-      type: 'string'
-    }),
-    defineField({
-      name: 'unitsPerPackage',
-      title: 'Units Per Package',
-      type: 'string'
-    }),
-    defineField({
-      name: 'weight',
-      title: 'Weight',
-      type: 'string'
-    }),
-    defineField({
-      name: 'weightUnits',
-      title: 'Weight Units',
-      type: 'string'
-    }),
-    defineField({
-      name: 'details',
-      title: 'Details',
+      name: 'containerSizes',
+      title: 'Container Sizes',
       type: 'array',
-      of: [
-        { type: 'productDocument' },
-        { type: 'activeIngredient' }
-      ]
+      of: [{ type: 'string' }],
+      validation: Rule => Rule.required().min(1),
+      group: 'regulatory',
+      options: {
+        aiAssist: {
+          exclude: true
+        }
+      }
     })
-  ]
+  ],
+  preview: {
+    select: {
+      title: 'name',
+      ingredients: 'activeIngredients'
+    },
+    prepare({ title, ingredients = [] }) {
+      const firstIngredient = ingredients[0]
+      const subtitle = firstIngredient 
+        ? `${firstIngredient.name} ${firstIngredient.amount}${firstIngredient.units}`
+        : 'No ingredients'
+
+      return {
+        title: title || 'Unnamed Variant',
+        subtitle
+      }
+    }
+  }
 }) 
