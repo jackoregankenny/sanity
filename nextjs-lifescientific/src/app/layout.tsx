@@ -14,15 +14,18 @@ export const metadata: Metadata = {
 
 interface RootLayoutProps {
   children: React.ReactNode
-  params?: {
+  params?: Promise<{
     lang?: string
-  }
+  }>
 }
 
-export default function RootLayout({
-  children,
-  params
-}: RootLayoutProps) {
+export default async function RootLayout(props: RootLayoutProps) {
+  const params = await props.params;
+
+  const {
+    children
+  } = props;
+
   const currentLang = params?.lang || getDefaultLanguage().id
 
   return (

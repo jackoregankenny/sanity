@@ -1,0 +1,13 @@
+[install]
+registry = "https://registry.npmjs.org"
+cache = true
+
+[install.scopes]
+"@sanity" = { token = "${SANITY_TOKEN}" }
+
+[test]
+coverage = true
+preload = "./setup-tests.ts"
+
+[debug]
+inspect-wait = true 

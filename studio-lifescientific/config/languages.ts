@@ -1,4 +1,4 @@
-import { definePlugin } from 'sanity'
+import { definePlugin, defineField, defineType } from 'sanity'
 
 export interface Language {
   id: string
@@ -8,8 +8,16 @@ export interface Language {
   countries: string[]
 }
 
+export type TranslationStatus = 'up-to-date' | 'needs-review' | 'out-of-sync'
+
+export const translationStatusList = [
+  { title: 'Up to Date', value: 'up-to-date' },
+  { title: 'Needs Review', value: 'needs-review' },
+  { title: 'Out of Sync', value: 'out-of-sync' }
+]
+
 export const languages: Language[] = [
-  { id: 'en', title: 'English', flag: '🇬🇧', isDefault: true, countries: ['UK', 'Ireland', 'USA', 'Canada'] },
+  { id: 'en', title: 'English', flag: '🌍', isDefault: true, countries: ['Ireland', 'UK', 'USA', 'Canada'] },
   { id: 'fr', title: 'French', flag: '🇫🇷', countries: ['France', 'Belgium'] },
   { id: 'de', title: 'German', flag: '🇩🇪', countries: ['Germany'] },
   { id: 'es', title: 'Spanish', flag: '🇪🇸', countries: ['Spain'] },
@@ -63,4 +71,36 @@ export const getLanguageBadge = (lang: string) => {
 
 // For filtering in desk structure
 export const languageFilter = (type: string, lang: string) => 
-  `_type == "${type}" && language == "${lang}"` 
+  `_type == "${type}" && language == "${lang}"`
+
+// Shared fields for translation tracking
+export const translationTrackingFields = [
+  defineField({
+    name: 'translationStatus',
+    title: 'Translation Status',
+    type: 'string',
+    options: {
+      list: translationStatusList
+    },
+    initialValue: 'up-to-date',
+    hidden: ({ document }) => document?.language === 'en'
+  }),
+  defineField({
+    name: 'lastTranslated',
+    title: 'Last Translated',
+    type: 'datetime',
+    hidden: ({ document }) => document?.language === 'en'
+  }),
+  defineField({
+    name: 'lastUpdated',
+    title: 'Last Updated',
+    type: 'datetime'
+  }),
+  defineField({
+    name: 'version',
+    title: 'Content Version',
+    type: 'string',
+    initialValue: '1.0.0',
+    validation: Rule => Rule.required()
+  })
+] 

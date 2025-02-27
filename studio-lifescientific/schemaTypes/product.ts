@@ -1,5 +1,12 @@
 import { defineField, defineType } from 'sanity'
-import { languageField } from '../config/languages'
+import { languageField, translationTrackingFields } from '../config/languages'
+
+interface PreviewProps {
+  title: string
+  subtitle: string
+  media: string
+  language: string
+}
 
 // Shared image field with alt text
 const imageWithAlt = {
@@ -34,10 +41,11 @@ export default defineType({
     { name: 'details', title: 'Product Details' },
     { name: 'features', title: 'Features & Benefits' },
     { name: 'variants', title: 'Product Variants' },
+    { name: 'crops', title: 'Supported Crops' },
     { name: 'media', title: 'Media' },
-    { name: 'seo', title: 'SEO' }
+    { name: 'seo', title: 'SEO' },
+    { name: 'translation', title: 'Translation Info' }
   ],
-  __experimental_actions: ['create', 'update', 'publish', 'delete'],
   initialValue: {
     features: [],
     benefits: [],
@@ -67,27 +75,63 @@ export default defineType({
         slugify: input => input
           .toLowerCase()
           .replace(/\s+/g, '-')
-          .replace(/[^\w\-]+/g, '')
+          .replace(/[^a-z0-9-]+/g, '')
           .slice(0, 96)
       },
       validation: Rule => Rule.required(),
       group: 'basic'
     }),
     languageField,
+    // Translation tracking fields
+    ...translationTrackingFields.map(field => ({
+      ...field,
+      group: 'translation'
+    })),
     defineField({
       name: 'category',
       title: 'Category',
-      type: 'string',
-      options: {
-        list: [
-          { title: 'Pesticide', value: 'pesticide' },
-          { title: 'Herbicide', value: 'herbicide' },
-          { title: 'Fungicide', value: 'fungicide' }
-        ],
-        layout: 'radio'
-      },
-      validation: Rule => Rule.required(),
-      group: 'basic'
+      type: 'object',
+      group: 'basic',
+      fields: [
+        defineField({
+          name: 'value',
+          title: 'Category Type',
+          type: 'string',
+          options: {
+            list: [
+              { title: 'Pesticide', value: 'pesticide' },
+              { title: 'Herbicide', value: 'herbicide' },
+              { title: 'Fungicide', value: 'fungicide' },
+              { title: 'Insecticide', value: 'insecticide' }
+            ],
+            layout: 'radio'
+          },
+          validation: Rule => Rule.required()
+        }),
+        defineField({
+          name: 'label',
+          title: 'Display Label',
+          type: 'string',
+          description: 'Translated display name for this category',
+          options: {
+            aiAssist: {
+              translateAction: true
+            }
+          },
+          validation: Rule => Rule.required()
+        })
+      ],
+      preview: {
+        select: {
+          value: 'value',
+          label: 'label'
+        },
+        prepare({ value, label }) {
+          return {
+            title: label || value
+          }
+        }
+      }
     }),
     // Product Details
     defineField({
@@ -161,7 +205,7 @@ export default defineType({
           }
         }
       }],
-      validation: Rule => Rule.min(2),
+      validation: Rule => Rule.min(1),
       group: 'features'
     }),
     defineField({
@@ -208,7 +252,7 @@ export default defineType({
           }
         }
       }],
-      validation: Rule => Rule.min(2),
+      validation: Rule => Rule.min(1),
       group: 'features'
     }),
     // Product Variants
@@ -236,12 +280,14 @@ export default defineType({
           }),
           defineField({
             name: 'activeIngredients',
+            title: 'Active Ingredients',
             type: 'array',
             of: [{
               type: 'object',
               fields: [
                 defineField({
                   name: 'name',
+                  title: 'Ingredient Name',
                   type: 'string',
                   validation: Rule => Rule.required()
                 }),
@@ -269,17 +315,48 @@ export default defineType({
           }),
           defineField({
             name: 'formulationType',
-            type: 'string',
-            options: {
-              list: [
-                { title: 'Soluble Concentrate (SL)', value: 'SL' },
-                { title: 'Emulsifiable Concentrate (EC)', value: 'EC' },
-                { title: 'Suspension Concentrate (SC)', value: 'SC' },
-                { title: 'Wettable Powder (WP)', value: 'WP' },
-                { title: 'Water Dispersible Granules (WG)', value: 'WG' }
-              ]
-            },
-            validation: Rule => Rule.required()
+            title: 'Formulation Type',
+            type: 'object',
+            fields: [
+              defineField({
+                name: 'value',
+                title: 'Type',
+                type: 'string',
+                options: {
+                  list: [
+                    { title: 'Soluble Concentrate (SL)', value: 'SL' },
+                    { title: 'Emulsifiable Concentrate (EC)', value: 'EC' },
+                    { title: 'Suspension Concentrate (SC)', value: 'SC' },
+                    { title: 'Wettable Powder (WP)', value: 'WP' },
+                    { title: 'Water Dispersible Granules (WG)', value: 'WG' }
+                  ]
+                },
+                validation: Rule => Rule.required()
+              }),
+              defineField({
+                name: 'label',
+                title: 'Display Label',
+                type: 'string',
+                description: 'Translated display name for this formulation type',
+                options: {
+                  aiAssist: {
+                    translateAction: true
+                  }
+                },
+                validation: Rule => Rule.required()
+              })
+            ],
+            preview: {
+              select: {
+                value: 'value',
+                label: 'label'
+              },
+              prepare({ value, label }) {
+                return {
+                  title: label || value
+                }
+              }
+            }
           }),
           defineField({
             name: 'registrationNumber',
@@ -320,6 +397,95 @@ export default defineType({
       }],
       validation: Rule => Rule.min(1).unique().error('Each variant must be unique'),
       group: 'variants'
+    }),
+    // Crop Support
+    defineField({
+      name: 'supportedCrops',
+      title: 'Supported Crops',
+      type: 'array',
+      of: [{
+        type: 'object',
+        fields: [
+          defineField({
+            name: 'crop',
+            title: 'Crop',
+            type: 'string',
+            validation: Rule => Rule.required(),
+            options: {
+              aiAssist: {
+                translateAction: true
+              }
+            }
+          }),
+          defineField({
+            name: 'dosage',
+            title: 'Dosage',
+            type: 'object',
+            fields: [
+              defineField({
+                name: 'amount',
+                title: 'Amount',
+                type: 'number',
+                validation: Rule => Rule.required().positive()
+              }),
+              defineField({
+                name: 'unit',
+                title: 'Unit',
+                type: 'string',
+                options: {
+                  list: [
+                    { title: 'L/ha', value: 'L/ha' },
+                    { title: 'kg/ha', value: 'kg/ha' },
+                    { title: 'g/ha', value: 'g/ha' },
+                    { title: 'mL/ha', value: 'mL/ha' }
+                  ]
+                },
+                validation: Rule => Rule.required()
+              })
+            ]
+          }),
+          defineField({
+            name: 'timing',
+            title: 'Application Timing',
+            type: 'string',
+            options: {
+              aiAssist: {
+                translateAction: true
+              }
+            }
+          }),
+          defineField({
+            name: 'notes',
+            title: 'Special Instructions',
+            type: 'text',
+            rows: 2,
+            options: {
+              aiAssist: {
+                translateAction: true
+              }
+            }
+          })
+        ],
+        preview: {
+          select: {
+            crop: 'crop',
+            amount: 'dosage.amount',
+            unit: 'dosage.unit'
+          },
+          prepare(selection: Record<string, any>) {
+            const crop = selection.crop as string
+            const amount = selection.amount as number | undefined
+            const unit = selection.unit as string | undefined
+            
+            return {
+              title: crop,
+              subtitle: amount && unit ? `${amount} ${unit}` : undefined
+            }
+          }
+        }
+      }],
+      group: 'crops',
+      validation: Rule => Rule.unique().error('Each crop can only be added once')
     }),
     // Media
     defineField({
@@ -370,9 +536,11 @@ export default defineType({
       media: 'productImage',
       language: 'language'
     },
-    prepare({ title, subtitle, media, language }) {
+    prepare(selection: PreviewProps) {
+      const { title, subtitle, media, language } = selection
+      
       const languageLabels = {
-        en: '🇬🇧',
+        en: '🌍',
         fr: '🇫🇷',
         de: '🇩🇪',
         es: '🇪🇸',
@@ -394,11 +562,5 @@ export default defineType({
         media
       }
     }
-  },
-  hooks: {
-    async beforeDocument(doc: any) {
-      const { documents, specifications, ...rest } = doc
-      return rest
-    }
   }
-}) 
+})

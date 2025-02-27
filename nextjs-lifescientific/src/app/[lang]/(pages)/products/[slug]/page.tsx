@@ -19,15 +19,32 @@ interface ActiveIngredient {
   units: string
 }
 
+interface SupportedCrop {
+  crop: string
+  dosage: {
+    amount: number
+    unit: string
+  }
+  timing?: string
+  notes?: string
+}
+
 interface ProductDocument extends SanityDocument {
   name: string
   description: string
   tagline?: string
-  category: 'pesticide' | 'herbicide' | 'fungicide'
+  category: {
+    value: 'pesticide' | 'herbicide' | 'fungicide'
+    label: string
+  }
+  supportedCrops?: SupportedCrop[]
   variants: Array<{
     name: string
     sku: string
-    formulationType: keyof typeof formulationTypes
+    formulationType: {
+      value: keyof typeof formulationTypes
+      label: string
+    }
     registrationNumber: string
     containerSizes: string[]
     activeIngredients: ActiveIngredient[]
@@ -53,10 +70,10 @@ interface ProductDocument extends SanityDocument {
 }
 
 interface Props {
-  params: {
+  params: Promise<{
     lang: string
     slug: string
-  }
+  }>
 }
 
 const formulationTypes = {
@@ -76,7 +93,7 @@ function validateLanguage(lang: string): asserts lang is LanguageCode {
 
 // Generate metadata
 export async function generateMetadata(props: Props): Promise<Metadata> {
-  const params = await Promise.resolve(props.params)
+  const params = await Promise.resolve((await props.params))
   validateLanguage(params.lang)
 
   const product = await client.fetch<ProductDocument | null>(
@@ -99,13 +116,16 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 // Add a helper function to group variants by region
 function groupVariantsByRegion(variants: ProductDocument['variants']) {
   return variants.reduce((acc, variant) => {
-    acc[variant.name] = variant;
+    if (!acc[variant.name]) {
+      acc[variant.name] = [];
+    }
+    acc[variant.name].push(variant);
     return acc;
-  }, {} as Record<string, ProductDocument['variants'][0]>);
+  }, {} as Record<string, ProductDocument['variants']>);
 }
 
 export default async function ProductPage(props: Props) {
-  const params = await Promise.resolve(props.params)
+  const params = await Promise.resolve((await props.params))
   validateLanguage(params.lang)
   const translations = await getTranslations(params.lang)
 
@@ -157,7 +177,7 @@ export default async function ProductPage(props: Props) {
               <div className="flex flex-col order-1 lg:order-2 lg:pl-8">
                 <div className="mb-8">
                   <Badge variant="secondary" className="mb-6 capitalize text-sm px-3 py-1">
-                    {translations.products.categoryLabels[product.category]}
+                    {product.category.value}
                   </Badge>
                   <h1 className="text-4xl font-bold mb-4">{product.name}</h1>
                   {product.tagline && (
@@ -273,6 +293,56 @@ export default async function ProductPage(props: Props) {
           </div>
         )}
 
+        {/* Supported Crops Section */}
+        {product.supportedCrops && product.supportedCrops.length > 0 && (
+          <div className="bg-white border-b">
+            <div className="container max-w-[80%] mx-auto px-4 py-16">
+              <div className="space-y-8">
+                <h2 className="text-2xl font-bold">Supported Crops</h2>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {product.supportedCrops.map((crop, index) => (
+                    <Card key={index}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-4">
+                          <div className="flex-1 space-y-4">
+                            {/* Crop Name and Dosage */}
+                            <div>
+                              <h3 className="text-lg font-medium mb-2 capitalize">{crop.crop}</h3>
+                              <Badge variant="secondary">
+                                {crop.dosage.amount} {crop.dosage.unit}
+                              </Badge>
+                            </div>
+
+                            {/* Application Timing */}
+                            {crop.timing && (
+                              <div>
+                                <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                                  Application Timing
+                                </h4>
+                                <p className="text-sm">{crop.timing}</p>
+                              </div>
+                            )}
+
+                            {/* Special Instructions */}
+                            {crop.notes && (
+                              <div>
+                                <h4 className="text-sm font-medium text-muted-foreground mb-1">
+                                  Special Instructions
+                                </h4>
+                                <p className="text-sm text-muted-foreground">{crop.notes}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Main Content - Regional Variants */}
         <div className="container max-w-[80%] mx-auto px-4 py-16">
           <Tabs defaultValue={defaultRegion} className="space-y-8">
@@ -290,94 +360,96 @@ export default async function ProductPage(props: Props) {
 
             {/* Region Tabs */}
             {regions.map((region) => {
-              const variant = variantsByRegion[region];
+              const variants = variantsByRegion[region];
               
               return (
                 <TabsContent key={region} value={region} className="space-y-8">
-                  <div className="grid md:grid-cols-3 gap-8">
-                    {/* Product Details */}
-                    <div className="md:col-span-2">
-                      <Card>
-                        <CardHeader className="pb-6">
-                          <CardTitle>Product Details</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-8">
-                          <div>
-                            <h4 className="text-sm font-medium mb-3">Registration Information</h4>
-                            <div className="grid gap-3">
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">SKU</span>
-                                <span className="font-medium">{variant.sku}</span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Registration Number</span>
-                                <span className="font-medium">{variant.registrationNumber}</span>
-                              </div>
-                              <div className="flex justify-between text-sm">
-                                <span className="text-muted-foreground">Formulation Type</span>
-                                <span className="font-medium">{formulationTypes[variant.formulationType]}</span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <div>
-                            <h4 className="text-sm font-medium mb-3">Available Pack Sizes</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {variant.containerSizes.map((size, idx) => (
-                                <Badge key={idx} variant="secondary">
-                                  {size}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Active Ingredients */}
-                          <div>
-                            <h4 className="text-sm font-medium mb-3">Active Ingredients</h4>
-                            <div className="grid gap-3">
-                              {variant.activeIngredients.map((ingredient, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                                  <span className="font-medium">{ingredient.name}</span>
-                                  <Badge variant="secondary">
-                                    {ingredient.amount} {ingredient.units}
-                                  </Badge>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-
-                    {/* Documents Section - Right Column */}
-                    {variant.documents && variant.documents.length > 0 && (
-                      <div>
+                  {variants.map((variant, index) => (
+                    <div key={index} className="grid md:grid-cols-3 gap-8">
+                      {/* Product Details */}
+                      <div className="md:col-span-2">
                         <Card>
                           <CardHeader className="pb-6">
-                            <CardTitle>Product Documents</CardTitle>
+                            <CardTitle>Product Details</CardTitle>
                           </CardHeader>
-                          <CardContent>
-                            <div className="grid gap-3">
-                              {variant.documents.map((doc, idx) => (
-                                <a
-                                  key={idx}
-                                  href={doc.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center justify-between p-4 bg-muted rounded-lg hover:bg-primary/5 transition-colors group"
-                                >
-                                  <span className="font-medium group-hover:text-primary transition-colors">
-                                    {doc.name.toUpperCase()}
-                                  </span>
-                                  <span className="text-primary">→</span>
-                                </a>
-                              ))}
+                          <CardContent className="space-y-8">
+                            <div>
+                              <h4 className="text-sm font-medium mb-3">Registration Information</h4>
+                              <div className="grid gap-3">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">SKU</span>
+                                  <span className="font-medium">{variant.sku}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Registration Number</span>
+                                  <span className="font-medium">{variant.registrationNumber}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">Formulation Type</span>
+                                  <span className="font-medium">{formulationTypes[variant.formulationType.value]}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <h4 className="text-sm font-medium mb-3">Available Pack Sizes</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {variant.containerSizes.map((size, idx) => (
+                                  <Badge key={idx} variant="secondary">
+                                    {size}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Active Ingredients */}
+                            <div>
+                              <h4 className="text-sm font-medium mb-3">Active Ingredients</h4>
+                              <div className="grid gap-3">
+                                {variant.activeIngredients.map((ingredient, idx) => (
+                                  <div key={idx} className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                                    <span className="font-medium">{ingredient.name}</span>
+                                    <Badge variant="secondary">
+                                      {ingredient.amount} {ingredient.units}
+                                    </Badge>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
                       </div>
-                    )}
-                  </div>
+
+                      {/* Documents Section - Right Column */}
+                      {variant.documents && variant.documents.length > 0 && (
+                        <div>
+                          <Card>
+                            <CardHeader className="pb-6">
+                              <CardTitle>Product Documents</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="grid gap-3">
+                                {variant.documents.map((doc, idx) => (
+                                  <a
+                                    key={idx}
+                                    href={doc.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-between p-4 bg-muted rounded-lg hover:bg-primary/5 transition-colors group"
+                                  >
+                                    <span className="font-medium group-hover:text-primary transition-colors">
+                                      {doc.name.toUpperCase()}
+                                    </span>
+                                    <span className="text-primary">→</span>
+                                  </a>
+                                ))}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </TabsContent>
               );
             })}

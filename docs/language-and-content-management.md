@@ -1,251 +1,230 @@
 # Life Scientific - Language and Content Management
 
 ## Table of Contents
+- [Overview](#overview)
 - [Language System](#language-system)
 - [Content Structure](#content-structure)
+- [Translation Management](#translation-management)
 - [Studio Organization](#studio-organization)
-- [Document Actions](#document-actions)
-- [Frontend Integration](#frontend-integration)
+- [Implementation Details](#implementation-details)
 - [Best Practices](#best-practices)
+
+## Overview
+
+The Life Scientific website uses Sanity.io for content management with built-in multilingual support. The system is designed to:
+- Maintain English as the primary content source
+- Support multiple language translations
+- Track translation status and updates
+- Share media assets across translations
+- Provide an efficient workflow for content managers
 
 ## Language System
 
-### Overview
-The system supports multilingual content management with English as the primary language and translations in:
-- French (fr) 🇫🇷
-- German (de) 🇩🇪
-- Spanish (es) 🇪🇸
-- Italian (it) 🇮🇹
-- Portuguese (pt) 🇵🇹
+### Supported Languages
+The system supports the following languages:
+```typescript
+languages = [
+  { id: 'en', title: 'English', flag: '🇬🇧', isDefault: true },
+  { id: 'fr', title: 'French', flag: '🇫🇷' },
+  { id: 'de', title: 'German', flag: '🇩🇪' },
+  { id: 'es', title: 'Spanish', flag: '🇪🇸' },
+  { id: 'it', title: 'Italian', flag: '🇮🇹' },
+  // ... additional languages
+]
+```
 
-### Translation Management
-
-#### 1. Original Documents
-- All original content is created in English
-- Original documents are marked with a "Original" badge
-- Located under "Original Products" or "Original Posts" sections
-
-#### 2. Translation Process
-- Translations are managed through the "🌐 Translate" button
-- Uses DeepL API for automated translation
-- Translatable fields:
-  - Products: name, tagline, description
-  - Posts: title, excerpt
-
-#### 3. Translation References
-- Each document maintains references to its translations
-- Translation IDs follow the format: `translation.{originalId}.{language}`
-- Translations reference back to their English original
+### Translation Status System
+Each translated document includes:
+- Status indicator: up-to-date ✓ | needs-review ⚠️ | out-of-sync ⚡
+- Last translation date
+- Last update date
+- Content version number
 
 ## Content Structure
 
-### Products
+### Document Types
+All translatable document types (products, pages, posts) include:
+- Language field (automatically set)
+- Translation tracking fields
+- Shared media references
+- AI-assisted translation fields
 
-#### 1. Base Product Structure
+### Media Handling
+- Images are stored once and referenced across translations
+- Only alt text and captions are translated
+- Uses Sanity's built-in asset management
+- No duplication of media assets
+
+## Translation Management
+
+### Translation Process
+1. Create content in English (source language)
+2. Create a new translation document or select an existing one
+3. Use the "Copy from English" button to copy the source content
+4. Use the AI Assist translation feature in Sanity Studio
+5. Review and edit translations as needed
+6. Update translation status and version
+
+### Copy from English Feature
+The system provides a "Copy from English" button that:
+- Automatically finds the English source document
+- Copies all translatable content fields
+- Maintains document structure and references
+- Sets translation status to "needs-review"
+- Updates translation metadata
+
+### Translation Fields
+Fields marked with `aiAssist.translateAction: true` can be translated:
 ```typescript
-{
-  name: string            // Product name
-  slug: string           // URL-friendly identifier
-  language: string       // Language code (en, fr, de, etc.)
-  tagline: string        // Short product description
-  description: string    // Full product description
-  productImage: Image    // Main product image
-  category: string       // pesticide/herbicide/fungicide
-  variants: ProductVariant[]
-  translations: TranslationRefs
+options: {
+  aiAssist: {
+    translateAction: true
+  }
 }
 ```
 
-#### 2. Product Variants
-```typescript
-{
-  country: 'IE' | 'UK'   // Country availability
-  crop: string          // Target crop
-  cropGroup: string     // Crop classification
-  approvalNumber: string // Regulatory approval
-  formulationType: string
-  mechanismOfAction: string
-  containerSize: string
-  details: (ProductDocument | ActiveIngredient)[]
-}
-```
+### Copied Fields
+The following fields are automatically copied from English source:
+- name
+- tagline
+- description
+- features
+- benefits
+- supportedCrops
+- variants
+- productImage
+- category
 
-### Blog Posts
-
-#### 1. Post Structure
-```typescript
-{
-  title: string         // Post title
-  slug: string         // URL-friendly identifier
-  language: string     // Language code
-  author: Reference    // Link to author
-  mainImage: Image     // Featured image
-  categories: Reference[] // Post categories
-  publishedAt: datetime
-  excerpt: string      // Short summary
-  body: array          // Rich text content
-  translations: TranslationRefs
-}
-```
+### Status Tracking
+Translation status is tracked through:
+- Visual indicators in the Studio
+- Status badges on content lists
+- Translation Info tab in document editor
+- Automatic status updates on copy operations
 
 ## Studio Organization
 
 ### Desk Structure
+The Studio is organized by content type and language:
 ```
 Content
+├── Landing Page
 ├── Products
-│   ├── Original Products (English)
-│   ├── Translations
-│   │   ├── French Products
-│   │   ├── German Products
-│   │   ├── Spanish Products
-│   │   ├── Italian Products
-│   │   └── Portuguese Products
-│   └── All Products
+│   ├── 🇬🇧 English (Original)
+│   ├── 🇫🇷 French
+│   ├── 🇩🇪 German
+│   └── ...
+├── Pages
 └── Blog
-    ├── Original Posts (English)
-    ├── Translations
-    │   ├── French Posts
-    │   ├── German Posts
-    │   ├── Spanish Posts
-    │   ├── Italian Posts
-    │   └── Portuguese Posts
-    ├── All Posts
+    ├── Posts
     ├── Authors
     └── Categories
 ```
 
-## Document Actions
+### Status Indicators
+- ✓ Up to date (green)
+- ⚠️ Needs review (yellow)
+- ⚡ Out of sync (red)
 
-### Translation Actions
-- **🌐 Translate**: Available on English documents
-  - Automatically creates/updates translations in all supported languages
-  - Preserves non-translatable fields (images, references, etc.)
-  - Shows status for each language (created/updated/failed)
+## Implementation Details
 
-### Delete Actions
+### Key Files
+1. `studio-lifescientific/config/languages.ts`
+   - Language configuration
+   - Translation status types
+   - Shared translation fields
 
-#### 1. Delete
-- Removes single document
-- Updates reference in original/translations
-- Maintains other translations
+2. `studio-lifescientific/deskStructure.ts`
+   - Studio navigation structure
+   - Language filtering
+   - Status badges
 
-#### 2. Delete All
-- Removes document and all translations
-- Requires confirmation
-- Cleans up all references
-- Available for both originals and translations
+3. `studio-lifescientific/schemaTypes/product.ts` (example)
+   - Document schema with translation fields
+   - AI-assist configuration
+   - Media handling
 
-## Frontend Integration
-
-### Language Selection
-- Language selector in header
-- Persists language preference
-- Automatically shows content in selected language
-
-### Content Display
-
-#### 1. Products
-- Filtered by language
-- Shows country availability
-- Displays technical details and variants
-- Related products based on category and country
-
-#### 2. Blog Posts
-- Language-specific content
-- Author information
-- Categories and tags
-- Rich text content with images
-
-### Translation UI
-- Language flags and native names
-- Clear indication of current language
-- Smooth transition between translations
+### Translation Fields Implementation
+```typescript
+// Translation tracking fields
+export const translationTrackingFields = [
+  {
+    name: 'translationStatus',
+    title: 'Translation Status',
+    type: 'string',
+    options: {
+      list: [
+        { title: 'Up to Date', value: 'up-to-date' },
+        { title: 'Needs Review', value: 'needs-review' },
+        { title: 'Out of Sync', value: 'out-of-sync' }
+      ]
+    }
+  },
+  {
+    name: 'lastTranslated',
+    title: 'Last Translated',
+    type: 'datetime'
+  },
+  // ... additional fields
+]
+```
 
 ## Best Practices
 
-### 1. Content Creation
-- Always create original content in English
-- Fill all required fields before translation
-- Use clear, translatable language
+### Content Creation
+1. Always create original content in English first
+2. Fill all required fields before translation
+3. Use clear, translatable language
+4. Add descriptive alt text for images
 
-### 2. Translation Management
-- Review automated translations
-- Keep translations in sync with originals
-- Use delete actions appropriately
+### Translation Workflow
+1. Use AI Assist for initial translation
+2. Review translations for accuracy
+3. Update translation status accordingly
+4. Keep versions synchronized
 
-### 3. Content Organization
-- Use appropriate categories
-- Maintain consistent naming
-- Keep product variants updated
+### Media Management
+1. Upload high-quality images once
+2. Use meaningful file names
+3. Add alt text in source language
+4. Translate alt text for each language
 
-### 4. Technical Details
-- Maintain accurate approval numbers
-- Update country availability
-- Keep documentation current
-
----
-
-## API Reference
-
-### Translation Endpoints
-
-#### POST /api/translate
-Translates content using DeepL API
-
-**Request Body:**
-```typescript
-{
-  fromLang: string,     // Source language (e.g., 'en')
-  toLang: string,       // Target language (e.g., 'fr', 'de')
-  document: {
-    fields: {           // Fields to translate
-      [key: string]: string
-    }
-  }
-}
-```
-
-**Response:**
-```typescript
-{
-  document: {
-    fields: {           // Translated fields
-      [key: string]: string
-    }
-  }
-}
-```
-
-### Environment Variables
-
-Required environment variables for translation functionality:
-```env
-DEEPL_API_KEY=your-api-key
-```
+### Version Control
+1. Increment version numbers for significant changes
+2. Update translation status when source changes
+3. Review affected translations
+4. Maintain change history
 
 ## Troubleshooting
 
 ### Common Issues
-
-1. **Translation Fails**
-   - Check DeepL API key validity
-   - Verify network connectivity
-   - Ensure content is not empty
-
-2. **Missing Translations**
-   - Verify original document exists
+1. **Missing Translations**
    - Check language configuration
-   - Confirm translation references
+   - Verify document references
+   - Ensure proper language field values
 
-3. **Delete Operation Fails**
-   - Check for reference constraints
-   - Verify user permissions
-   - Ensure document exists
+2. **Status Not Updating**
+   - Check desk structure configuration
+   - Verify translation tracking fields
+   - Clear browser cache
 
-### Support
+3. **Media Issues**
+   - Verify asset references
+   - Check image permissions
+   - Confirm CDN configuration
 
-For additional support or feature requests:
-- Email: support@lifescientific.com
-- Documentation: [Internal Wiki]
-- GitHub: [Repository Link] 
+## Support and Resources
+
+### Documentation
+- [Sanity.io Documentation](https://www.sanity.io/docs)
+- [AI Assist Guide](https://www.sanity.io/docs/ai-assist)
+- Internal Wiki (link)
+
+### Contact
+- Technical Support: support@lifescientific.com
+- Content Team: content@lifescientific.com
+
+---
+
+Last Updated: [Current Date]
+Version: 2.0.0 

@@ -1,3 +1,4 @@
+'use client'
 import Image from 'next/image'
 import { urlFor } from '@/sanity/image'
 import { useState } from 'react'

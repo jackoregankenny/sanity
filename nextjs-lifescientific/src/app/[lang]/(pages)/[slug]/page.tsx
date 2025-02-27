@@ -31,10 +31,10 @@ interface PageDocument extends SanityDocument {
 }
 
 interface Props {
-  params: {
+  params: Promise<{
     lang: string
     slug: string
-  }
+  }>
 }
 
 // Validate the language parameter
@@ -45,7 +45,8 @@ function validateLanguage(lang: string): asserts lang is LanguageCode {
 }
 
 // Generate metadata
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   validateLanguage(params.lang)
 
   const page = await client.fetch<PageDocument | null>(
@@ -65,7 +66,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-export default async function Page({ params }: Props) {
+export default async function Page(props0: Props) {
+  const params = await props0.params;
   validateLanguage(params.lang)
   const translations = await getTranslations(params.lang)
 

@@ -1,5 +1,5 @@
 import { defineField, defineType } from '@sanity/types'
-import { languageField } from '../config/languages'
+import { languageField, translationTrackingFields } from '../config/languages'
 import { DocumentIcon } from '@sanity/icons'
 
 export default defineType({
@@ -11,6 +11,10 @@ export default defineType({
     {
       name: 'content',
       title: 'Content',
+    },
+    {
+      name: 'metadata',
+      title: 'Metadata',
     },
     {
       name: 'seo',
@@ -43,19 +47,72 @@ export default defineType({
           .replace(/[^\w\-]+/g, '')
           .slice(0, 96)
       },
-      validation: Rule => Rule.required()
+      validation: Rule => Rule.required(),
+      group: 'metadata'
     }),
     languageField,
+    ...translationTrackingFields,
     defineField({
       name: 'pageBuilder',
       title: 'Page Builder',
       type: 'array',
       group: 'content',
       of: [
-        { type: 'pageHero' },
+        { type: 'hero' },
         { type: 'pageFeatures' },
         { type: 'pageGallery' },
-        { type: 'pageVideo' }
+        { type: 'pageVideo' },
+        { 
+          type: 'object',
+          name: 'contentBlock',
+          title: 'Content Block',
+          fields: [
+            defineField({
+              name: 'content',
+              type: 'array',
+              of: [
+                {
+                  type: 'block',
+                  styles: [
+                    {title: 'Normal', value: 'normal'},
+                    {title: 'H2', value: 'h2'},
+                    {title: 'H3', value: 'h3'},
+                    {title: 'H4', value: 'h4'}
+                  ],
+                  lists: [
+                    {title: 'Bullet', value: 'bullet'},
+                    {title: 'Number', value: 'number'}
+                  ],
+                  marks: {
+                    decorators: [
+                      {title: 'Strong', value: 'strong'},
+                      {title: 'Emphasis', value: 'em'}
+                    ],
+                    annotations: [
+                      {
+                        name: 'link',
+                        type: 'object',
+                        title: 'Link',
+                        fields: [
+                          {
+                            name: 'href',
+                            type: 'url',
+                            title: 'URL'
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              options: {
+                aiAssist: {
+                  translateAction: true
+                }
+              }
+            })
+          ]
+        }
       ],
       validation: Rule => Rule.required().min(1)
     }),
@@ -91,20 +148,9 @@ export default defineType({
       language: 'language'
     },
     prepare({ title, language }) {
-      const languageLabels = {
-        en: '🇬🇧',
-        fr: '🇫🇷',
-        de: '🇩🇪',
-        es: '🇪🇸',
-        it: '🇮🇹',
-        'pt-PT': '🇵🇹',
-        'pt-BR': '🇧🇷'
-      } as const
-      
-      const flag = languageLabels[language as keyof typeof languageLabels] || ''
-      
       return {
-        title: `${flag} ${title || 'Untitled Page'}`
+        title: title || 'Untitled Page',
+        subtitle: `Language: ${language || 'Not set'}`
       }
     }
   }

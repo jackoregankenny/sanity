@@ -2,7 +2,7 @@ import { defineField, defineType } from 'sanity'
 import { ImageIcon, DocumentTextIcon, PlayIcon, StackIcon } from '@sanity/icons'
 
 // Shared image field with alt text
-const imageWithAlt = {
+export const imageWithAlt = {
   type: 'image',
   options: {
     hotspot: true,

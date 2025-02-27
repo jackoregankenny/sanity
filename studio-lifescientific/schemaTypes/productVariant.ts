@@ -100,7 +100,8 @@ export default defineType({
           { title: 'Emulsifiable Concentrate (EC)', value: 'EC' },
           { title: 'Suspension Concentrate (SC)', value: 'SC' },
           { title: 'Wettable Powder (WP)', value: 'WP' },
-          { title: 'Water Dispersible Granules (WG)', value: 'WG' }
+          { title: 'Water Dispersible Granules (WG)', value: 'WG' },
+          { title: 'Capsule Suspension (CS)', value: 'CS' }
         ],
         aiAssist: {
           exclude: true

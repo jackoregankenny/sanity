@@ -3,6 +3,7 @@ import {deskTool} from 'sanity/desk'
 import {visionTool} from '@sanity/vision'
 import {documentInternationalization} from '@sanity/document-internationalization'
 import {assist, contextDocumentTypeName} from '@sanity/assist'
+import {presentationTool} from '@sanity/presentation'
 import {schemaTypes} from './schemaTypes'
 import {structure} from './deskStructure'
 import CopyFromSourceAction from './actions/copyFromSource'
@@ -106,6 +107,14 @@ export default defineConfig({
           documentTypes: ['product']
         }
       }
+    }),
+    presentationTool({
+      previewUrl: {
+        draftMode: {
+          enable: '/api/draft',
+        },
+      },
+      title: 'Preview'
     })
   ],
   schema: {

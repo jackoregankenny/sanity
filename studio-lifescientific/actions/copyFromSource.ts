@@ -1,60 +1,138 @@
-import {useClient} from 'sanity'
-import {DocumentActionProps} from 'sanity'
+import { useClient } from 'sanity'
+import { useToast } from '@sanity/ui'
+import { DocumentActionProps } from 'sanity'
+import { translationStatusList } from '../config/languages'
 
-// Fields that should be copied from source
-const FIELDS_TO_COPY = ['name', 'tagline', 'description', 'productImage'] as const
+interface SanityDocument {
+  _type: string
+  _id: string
+  language?: string
+  slug?: {
+    current: string
+  }
+}
+
+// Get all fields that have aiAssist.translateAction = true
+async function getTranslatableFields(client: any, type: string) {
+  const schema = await client.fetch(`*[_type == "schema.type" && name == $type][0]`, { type })
+  return schema?.fields?.filter((field: any) => 
+    field.options?.aiAssist?.translateAction === true
+  ).map((field: any) => field.name) || []
+}
 
 export default function CopyFromSourceAction(props: DocumentActionProps) {
-  const {draft, published, id} = props
+  const { draft, published, id, type } = props
   const client = useClient()
+  const toast = useToast()
 
   // Only show on non-English documents
-  const doc = draft || published
+  const doc = (draft || published) as SanityDocument | undefined
   const isTranslation = doc?.language && doc.language !== 'en'
   
-  if (!isTranslation) {
+  if (!isTranslation || !doc?.slug?.current) {
     return null
   }
+
+  // Safe to use doc.slug.current after the check above
+  const slugCurrent = doc.slug.current
 
   return {
     label: 'Copy from English',
     icon: () => '🔄',
     onHandle: async () => {
-      // Get the base document ID (without language suffix)
-      const baseId = id.replace(/--[a-z]{2}(-[A-Z]{2})?$/, '')
-      
       try {
-        // Fetch the English source document
-        const sourceDoc = await client.fetch(
-          `*[_id == $id && language == "en"][0]`,
-          {id: baseId}
+        // Show progress toast
+        toast.push({ status: 'info', title: 'Copying from English source...' })
+
+        // Find the English source document using the same slug
+        const englishDoc = await client.fetch(
+          `*[_type == $type && language == "en" && slug.current == $slug][0]`,
+          { 
+            type,
+            slug: slugCurrent
+          }
         )
 
-        if (!sourceDoc) {
-          throw new Error('Source document not found')
+        if (!englishDoc) {
+          throw new Error('English source document not found. Please create the English version first with the same slug.')
         }
 
-        // Create a single patch with all field updates
-        const patch = {
-          _type: 'product',
+        // Only copy specific fields from English source
+        const fieldsToCopy = [
+          'name',
+          'tagline',
+          'description',
+          'features',
+          'benefits',
+          'supportedCrops',
+          'variants',
+          'productImage',
+          'category'
+        ] as const
+
+        // Create base document data with type safety
+        const documentData: Record<string, any> = {
+          _type: type,
           language: doc.language,
-          ...FIELDS_TO_COPY.reduce((acc, field) => ({
-            ...acc,
-            [field]: sourceDoc[field]
-          }), {})
+          translationStatus: 'needs-review' as const,
+          lastTranslated: new Date().toISOString(),
+          lastUpdated: new Date().toISOString(),
+          version: englishDoc.version,
+          slug: {
+            _type: 'slug',
+            current: slugCurrent
+          }
         }
 
-        // Apply the patch
-        await client
-          .patch(id)
-          .set(patch)
-          .commit()
+        // Add fields from English source
+        fieldsToCopy.forEach(field => {
+          if (englishDoc[field]) {
+            documentData[field] = englishDoc[field]
+          }
+        })
 
-        // Show success message
-        props.onComplete()
+        try {
+          // Always work with drafts
+          const draftId = draft?.['_id'] || `drafts.${id}`
+          
+          // Check if draft exists
+          const existingDraft = await client.fetch(`*[_id == $draftId][0]`, { draftId })
+
+          if (existingDraft) {
+            // Update existing draft
+            await client
+              .patch(draftId)
+              .set(documentData)
+              .commit()
+          } else {
+            // Create new draft with required fields
+            await client.createOrReplace({
+              ...documentData,
+              _id: draftId,
+              _type: type // Ensure _type is included
+            })
+          }
+
+          // Show success message
+          toast.push({
+            status: 'success',
+            title: 'Content copied from English',
+            description: 'Use the AI Assist button in each field to translate the content'
+          })
+
+          props.onComplete()
+        } catch (mutationError) {
+          console.error('Mutation error:', mutationError)
+          throw new Error('Failed to update document. Please try again.')
+        }
       } catch (err) {
         console.error('Failed to copy from source:', err)
         // Show error message
+        toast.push({
+          status: 'error',
+          title: 'Copy failed',
+          description: err instanceof Error ? err.message : 'Unknown error occurred'
+        })
         props.onComplete()
       }
     }
