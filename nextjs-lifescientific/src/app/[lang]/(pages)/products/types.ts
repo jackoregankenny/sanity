@@ -11,6 +11,10 @@ export interface ActiveIngredient {
 
 export interface SupportedCrop {
   crop: string
+  dosage?: {
+    amount: string
+    unit: string
+  }
 }
 
 export interface ProductDocument extends SanityDocument {
@@ -25,9 +29,17 @@ export interface ProductDocument extends SanityDocument {
     alt?: string
   }
   category: {
-    value: 'pesticide' | 'herbicide' | 'fungicide'
+    value: 'pesticide' | 'herbicide' | 'fungicide' | 'insecticide'
     label: string
   }
+  benefits?: Array<{
+    title: string
+    description?: string
+  }>
+  features?: Array<{
+    title: string
+    description?: string
+  }>
   variants: Array<{
     name: string
     formulationType: {
@@ -35,6 +47,8 @@ export interface ProductDocument extends SanityDocument {
       label: string
     }
     activeIngredients?: ActiveIngredient[]
+    containerSizes?: string[]
+    registrationNumber?: string
   }>
   supportedCrops?: SupportedCrop[]
 } 

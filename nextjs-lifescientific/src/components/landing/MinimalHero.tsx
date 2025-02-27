@@ -5,19 +5,43 @@ import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { urlForImage } from '@/lib/sanity.image';
+import { SanityImage } from '@/types/sanity';
+
+// Updated to include all editable elements
+type DataPoint = {
+  label: string;
+  value: string;
+};
 
 type MinimalHeroProps = {
   title?: string;
   subtitle?: string;
   ctaText?: string;
   secondaryCtaText?: string;
+  image?: SanityImage;
+  showNotification?: boolean;
+  notificationText?: string;
+  notificationIcon?: string;
+  dataPoints?: DataPoint[];
+  highlightWords?: string;
 };
 
 const MinimalHero: React.FC<MinimalHeroProps> = ({
   title = "Scientific protection for optimal crop performance",
   subtitle = "High-efficacy agricultural solutions backed by research and developed for sustainable farming practices.",
   ctaText = "Discover Products",
-  secondaryCtaText = "Learn More"
+  secondaryCtaText = "Learn More",
+  image,
+  showNotification = true,
+  notificationText = "New sustainable formula release",
+  notificationIcon = "",
+  dataPoints = [
+    { label: "Effectiveness", value: "98.3%" },
+    { label: "Sustainability", value: "Eco-certified" },
+    { label: "Research", value: "15+ years" }
+  ],
+  highlightWords = "optimal crop performance"
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
@@ -31,20 +55,77 @@ const MinimalHero: React.FC<MinimalHeroProps> = ({
   const backgroundY = useTransform(scrollYProgress, [0, 1], [0, 100]);
   const foregroundY = useTransform(scrollYProgress, [0, 1], [0, -50]);
   
+  // Function to highlight specific words in the title
+  const renderTitleWithHighlight = () => {
+    if (!title) return null;
+    
+    // If there are highlight words, split and highlight them
+    if (highlightWords && title.includes(highlightWords)) {
+      const parts = title.split(highlightWords);
+      return (
+        <>
+          <motion.span
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="block mb-1"
+          >
+            {parts[0]}
+          </motion.span>
+          <motion.span
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="block"
+          >
+            for <span className="text-[#0f766e]">{highlightWords}</span>{parts[1] || ''}
+          </motion.span>
+        </>
+      );
+    }
+    
+    // Otherwise just render the title normally
+    return (
+      <motion.span
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
+      >
+        {title}
+      </motion.span>
+    );
+  };
+  
   return (
     <div 
       ref={containerRef}
       className="relative min-h-screen w-full overflow-hidden bg-white flex flex-col justify-center"
     >
-      {/* Subtle pattern background */}
-      <div className="absolute inset-0 bg-[#f9fafb]">
-        <div 
-          className="h-full w-full opacity-[0.03]"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}
-        />
-      </div>
+      {/* Background image from Sanity if available */}
+      {image && urlForImage(image) ? (
+        <motion.div 
+          className="absolute inset-0 z-0"
+          style={{ y: backgroundY }}
+        >
+          <Image
+            src={urlForImage(image)!.url()}
+            alt={image.alt || 'Hero background'}
+            fill
+            priority
+            className="object-cover opacity-20"
+          />
+        </motion.div>
+      ) : (
+        // Subtle pattern background fallback
+        <div className="absolute inset-0 bg-[#f9fafb]">
+          <div 
+            className="h-full w-full opacity-[0.03]"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+            }}
+          />
+        </div>
+      )}
       
       {/* Background gradient */}
       <motion.div 
@@ -55,18 +136,20 @@ const MinimalHero: React.FC<MinimalHeroProps> = ({
       {/* Main content */}
       <div className="container relative z-10 mx-auto px-4 md:px-6 flex flex-col items-center justify-center h-full">
         <div className="max-w-5xl mx-auto text-center">
-          {/* Announcement badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="mb-8 inline-flex items-center rounded-full bg-[#f0f9f6] border border-[#e0f2ed] px-4 py-1.5"
-          >
-            <span className="flex h-2 w-2 rounded-full bg-[#10b981] mr-2">
-              <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-[#10b981] opacity-75"></span>
-            </span>
-            <span className="text-sm font-medium text-[#0f766e]">New sustainable formula release</span>
-          </motion.div>
+          {/* Announcement badge - Now conditional */}
+          {showNotification && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="mb-8 inline-flex items-center rounded-full bg-[#f0f9f6] border border-[#e0f2ed] px-4 py-1.5"
+            >
+              <span className="flex h-2 w-2 rounded-full bg-[#10b981] mr-2">
+                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-[#10b981] opacity-75"></span>
+              </span>
+              <span className="text-sm font-medium text-[#0f766e]">{notificationText}</span>
+            </motion.div>
+          )}
           
           {/* Title with staggered reveal */}
           <motion.div
@@ -76,22 +159,7 @@ const MinimalHero: React.FC<MinimalHeroProps> = ({
             className="mb-6"
           >
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-gray-900 font-display">
-              <motion.span
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="block mb-1"
-              >
-                Scientific protection
-              </motion.span>
-              <motion.span
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="block"
-              >
-                for <span className="text-[#0f766e]">optimal crop performance</span>
-              </motion.span>
+              {renderTitleWithHighlight()}
             </h1>
           </motion.div>
           
@@ -276,42 +344,52 @@ const MinimalHero: React.FC<MinimalHeroProps> = ({
                 </motion.div>
               </motion.div>
               
-              {/* Floating data points */}
-              <motion.div 
-                className="absolute left-[15%] top-[30%] flex flex-col items-start"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.9 }}
-              >
-                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-gray-100">
-                  <div className="text-xs font-medium text-gray-500 mb-1">Effectiveness</div>
-                  <div className="text-lg font-semibold text-[#0f766e]">98.3%</div>
-                </div>
-              </motion.div>
-              
-              <motion.div 
-                className="absolute right-[15%] top-[40%] flex flex-col items-end"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 1.1 }}
-              >
-                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-gray-100">
-                  <div className="text-xs font-medium text-gray-500 mb-1">Sustainability</div>
-                  <div className="text-lg font-semibold text-[#0f766e]">Eco-certified</div>
-                </div>
-              </motion.div>
-              
-              <motion.div 
-                className="absolute left-[25%] bottom-[25%] flex flex-col items-start"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 1.3 }}
-              >
-                <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-gray-100">
-                  <div className="text-xs font-medium text-gray-500 mb-1">Research</div>
-                  <div className="text-lg font-semibold text-[#0f766e]">15+ years</div>
-                </div>
-              </motion.div>
+              {/* Floating data points - now dynamic */}
+              {dataPoints && dataPoints.length > 0 && (
+                <>
+                  {dataPoints[0] && (
+                    <motion.div 
+                      className="absolute left-[15%] top-[30%] flex flex-col items-start"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.9 }}
+                    >
+                      <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-gray-100">
+                        <div className="text-xs font-medium text-gray-500 mb-1">{dataPoints[0].label}</div>
+                        <div className="text-lg font-semibold text-[#0f766e]">{dataPoints[0].value}</div>
+                      </div>
+                    </motion.div>
+                  )}
+                  
+                  {dataPoints[1] && (
+                    <motion.div 
+                      className="absolute right-[15%] top-[40%] flex flex-col items-end"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 1.1 }}
+                    >
+                      <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-gray-100">
+                        <div className="text-xs font-medium text-gray-500 mb-1">{dataPoints[1].label}</div>
+                        <div className="text-lg font-semibold text-[#0f766e]">{dataPoints[1].value}</div>
+                      </div>
+                    </motion.div>
+                  )}
+                  
+                  {dataPoints[2] && (
+                    <motion.div 
+                      className="absolute left-[25%] bottom-[25%] flex flex-col items-start"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 1.3 }}
+                    >
+                      <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg shadow-sm border border-gray-100">
+                        <div className="text-xs font-medium text-gray-500 mb-1">{dataPoints[2].label}</div>
+                        <div className="text-lg font-semibold text-[#0f766e]">{dataPoints[2].value}</div>
+                      </div>
+                    </motion.div>
+                  )}
+                </>
+              )}
             </div>
           </div>
           

@@ -4,6 +4,16 @@ import React, { useState, useRef, useEffect } from 'react'
 import { motion, useInView, useMotionValue, useSpring, useTransform } from 'framer-motion'
 import { Check, Leaf, Droplet, Sprout, Landmark } from 'lucide-react'
 import Image from 'next/image'
+import { urlForImage } from '@/lib/sanity.image'
+import { SanityImage } from '@/types/sanity'
+
+interface AboutSectionProps {
+  title: string
+  subtitle?: string
+  description: string
+  values?: string[]
+  image?: SanityImage
+}
 
 export function AboutSection({
   title = "Our Mission",
@@ -16,13 +26,7 @@ export function AboutSection({
     "Global collaboration"
   ],
   image
-}: {
-  title?: string
-  subtitle?: string
-  description?: string
-  values?: string[]
-  image?: any
-}) {
+}: AboutSectionProps) {
   // Track mouse position for image hover effect
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
@@ -126,11 +130,11 @@ export function AboutSection({
                 whileHover={{ scale: 1.02 }}
                 transition={{ type: "tween", duration: 0.3 }} // Using tween instead of spring for better performance
               >
-                {image ? (
+                {image && urlForImage(image) ? (
                   <div className="aspect-[4/3] relative">
                     <Image
-                      src={image}
-                      alt="Life Scientific research"
+                      src={urlForImage(image)!.url()}
+                      alt={image.alt || "About Life Scientific"}
                       fill
                       className="object-cover"
                     />

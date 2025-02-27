@@ -58,6 +58,16 @@ export default defineType({
       type: 'array',
       group: 'content',
       of: [
+        // Landing Page Sections
+        { type: 'landingHero' },
+        { type: 'landingFeatures' },
+        { type: 'landingProducts' },
+        { type: 'landingResearch' },
+        { type: 'landingAbout' },
+        { type: 'landingTestimonials' },
+        { type: 'landingContact' },
+        
+        // Standard Page Blocks
         { type: 'hero' },
         { type: 'pageFeatures' },
         { type: 'pageGallery' },
