@@ -107,13 +107,14 @@ function ProductCard({ product, index }: { product: LandingProductItem, index: n
       transition={{ duration: 0.5, delay }}
       className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow"
     >
-      {/* Product image */}
-      <div className="relative aspect-[4/3] w-full bg-gray-100">
+      {/* Product image - updated to 1:1 ratio */}
+      <div className="relative aspect-square w-full bg-gray-100">
         <Image
           src={imageUrl}
           alt={product.name}
           fill
-          className="object-cover"
+          className="object-contain p-2"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
         />
         
         {/* Category badge */}
@@ -139,9 +140,31 @@ function ProductCard({ product, index }: { product: LandingProductItem, index: n
         )}
         
         {product.shortDescription && (
-          <p className="text-gray-600 text-sm mb-5 flex-grow">
+          <p className="text-gray-600 text-sm mb-4 flex-grow">
             {product.shortDescription}
           </p>
+        )}
+        
+        {/* Supported Crops Section - New */}
+        {product.supportedCrops && product.supportedCrops.length > 0 && (
+          <div className="mb-4">
+            <div className="text-xs font-medium text-gray-500 mb-2">Supported Crops:</div>
+            <div className="flex flex-wrap gap-1.5">
+              {product.supportedCrops.slice(0, 3).map((crop, i) => (
+                <span key={i} className="inline-flex items-center bg-gray-50 text-gray-600 text-xs px-2 py-1 rounded-full">
+                  <svg className="w-3 h-3 mr-1 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {crop.crop}
+                </span>
+              ))}
+              {product.supportedCrops.length > 3 && (
+                <span className="inline-block text-xs text-gray-500">
+                  +{product.supportedCrops.length - 3} more
+                </span>
+              )}
+            </div>
+          </div>
         )}
         
         {/* Link to product detail page */}

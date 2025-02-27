@@ -52,6 +52,13 @@ export interface LandingProductItem {
   tagline?: string
   shortDescription?: string
   productImage?: SanityImage
+  supportedCrops?: Array<{
+    crop: string
+    dosage?: {
+      amount: number | string
+      unit: string
+    }
+  }>
 }
 
 export interface LandingProductsBlock {
@@ -68,6 +75,11 @@ export interface LandingStatItem {
   label: string
 }
 
+export interface ResearchApproach {
+  title: string
+  description: string
+}
+
 export interface LandingResearchBlock {
   _type: 'landingResearch'
   _key: string
@@ -75,6 +87,7 @@ export interface LandingResearchBlock {
   subtitle?: string
   description?: string
   stats: LandingStatItem[]
+  researchApproaches?: ResearchApproach[]
   image?: SanityImage
 }
 

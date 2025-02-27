@@ -9,6 +9,8 @@ import { AboutSection } from "@/components/landing/AboutSection"
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection"
 import { ResearchSection } from "@/components/landing/ResearchSection"
 import { ContactSection } from "@/components/landing/ContactSection"
+import { FAQSection } from '@/components/landing/FAQSection'
+import { PartnersSection } from '@/components/landing/PartnersSection'
 import { createClient } from '@/lib/sanity.client'
 
 interface Props {
@@ -43,6 +45,20 @@ export function generateMetadata({ params }: { params: { lang: string } }): Meta
 // Create Sanity client
 const client = createClient()
 
+const componentMap = {
+  landingHero: MinimalHero, // or any other hero component
+  landingFeatures: FeaturesSection,
+  landingProducts: ProductsSection, 
+  landingResearch: ResearchSection,
+  landingTestimonials: TestimonialsSection,
+  landingValues: ValuesSection,
+  landingStats: StatsSection,
+  landingContact: ContactSection,
+  landingFAQ: FAQSection,
+  landingPartners: PartnersSection,
+  // add more mappings as needed
+}
+
 export default async function LandingPage(props: Props) {
   const params = await Promise.resolve((await props.params))
   validateLanguage(params.lang)
@@ -75,7 +91,7 @@ export default async function LandingPage(props: Props) {
         _id,
         name,
         slug,
-        "category": category->name,
+        "category": category.label,
         tagline,
         shortDescription,
         productImage {
@@ -84,11 +100,22 @@ export default async function LandingPage(props: Props) {
             url
           },
           alt
+        },
+        supportedCrops[] {
+          crop,
+          dosage {
+            amount,
+            unit
+          }
         }
       },
       stats[] {
         value,
         label
+      },
+      researchApproaches[] {
+        title,
+        description
       },
       description,
       values,
@@ -189,6 +216,8 @@ export default async function LandingPage(props: Props) {
                   subtitle={block.subtitle}
                   stats={block.stats || []}
                   description={block.description}
+                  researchApproaches={block.researchApproaches || []}
+                  image={block.image}
                 />
               )
             case 'landingTestimonials':
@@ -220,6 +249,24 @@ export default async function LandingPage(props: Props) {
                   ctaText={block.ctaText}
                   email={block.email}
                   phone={block.phone}
+                />
+              )
+            case 'landingFAQ':
+              return (
+                <FAQSection
+                  key={block._key}
+                  title={block.title}
+                  subtitle={block.subtitle}
+                  questions={block.questions || []}
+                />
+              )
+            case 'landingPartners':
+              return (
+                <PartnersSection
+                  key={block._key}
+                  title={block.title}
+                  subtitle={block.subtitle}
+                  partners={block.partners || []}
                 />
               )
             default:

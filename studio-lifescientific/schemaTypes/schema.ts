@@ -1,0 +1,30 @@
+import {
+  landingHeroBlock,
+  landingFeaturesBlock,
+  landingProductsBlock,
+  landingResearchBlock,
+  landingTestimonialsBlock,
+  landingValuesBlock,
+  landingStatsBlock,
+  landingContactBlock,
+  landingFAQBlock,
+  landingPartnersBlock,
+} from './blocks/landingPageBlocks'
+
+defineField({
+  name: 'pageBuilder',
+  title: 'Page Builder',
+  type: 'array',
+  of: [
+    {type: 'landingHeroBlock'},
+    {type: 'landingFeaturesBlock'},
+    {type: 'landingProductsBlock'},
+    {type: 'landingResearchBlock'},
+    {type: 'landingTestimonialsBlock'},
+    {type: 'landingValuesBlock'},
+    {type: 'landingStatsBlock'},
+    {type: 'landingContactBlock'},
+    {type: 'landingFAQBlock'},
+    {type: 'landingPartnersBlock'},
+  ],
+}), 

@@ -11,21 +11,43 @@ type ResearchStat = {
   icon?: React.ReactNode
 }
 
+type ResearchApproach = {
+  title: string
+  description: string
+}
+
 export function ResearchSection({
-  title = "Research-Driven Innovation",
-  subtitle = "Our scientific approach to agricultural challenges",
+  title = "Life Scientific Research",
+  subtitle = "Our Scientific Approach",
   stats = [
     { value: "15+", label: "Years of Research" },
     { value: "98.3%", label: "Effectiveness Rate" },
     { value: "40+", label: "Countries Served" },
     { value: "12", label: "Research Centers" }
   ],
-  description = "At Life Scientific, every product represents years of rigorous research and testing. Our team of scientists continuously works to develop solutions that address the evolving challenges of modern agriculture while prioritizing environmental sustainability."
+  description = "At Life Scientific, every product represents years of rigorous research and testing. Our team of scientists continuously works to develop solutions that address the evolving challenges of modern agriculture while prioritizing environmental sustainability.",
+  researchApproaches = [
+    {
+      title: "Rigorous Testing",
+      description: "Each product undergoes extensive field trials in diverse agricultural environments."
+    },
+    {
+      title: "Innovative Formulations",
+      description: "Our scientists develop specialized compounds that maximize effectiveness while minimizing environmental impact."
+    },
+    {
+      title: "Data-Driven Approach",
+      description: "We continuously analyze performance metrics to refine and improve our agricultural solutions."
+    }
+  ],
+  image
 }: {
   title?: string
   subtitle?: string
   stats?: ResearchStat[]
   description?: string
+  researchApproaches?: ResearchApproach[]
+  image?: any
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: false, amount: 0.2 })
@@ -63,6 +85,16 @@ export function ResearchSection({
       <BarChart3 key="chart" className="w-5 h-5" />,
       <Globe2 key="globe" className="w-5 h-5" />,
       <Microscope key="microscope" className="w-5 h-5" />
+    ]
+    return icons[index % icons.length]
+  }
+  
+  // Icon mapping for research approaches
+  const getApproachIcon = (index: number) => {
+    const icons = [
+      <Microscope className="h-4 w-4" />,
+      <FlaskConical className="h-4 w-4" />,
+      <BarChart3 className="h-4 w-4" />
     ]
     return icons[index % icons.length]
   }
@@ -195,7 +227,7 @@ export function ResearchSection({
               <div className="md:col-span-2 relative h-64 md:h-auto">
                 <div className="h-full w-full relative will-change-transform">
                   <Image
-                    src="/images/research-lab.jpg"
+                    src={image ? image : "/images/research-lab.jpg"}
                     alt="Life Scientific Research"
                     fill
                     className="object-cover"
@@ -244,23 +276,7 @@ export function ResearchSection({
                 </h3>
                 
                 <div className="space-y-6">
-                  {[
-                    {
-                      title: "Rigorous Testing",
-                      description: "Each product undergoes extensive field trials in diverse agricultural environments.",
-                      icon: <Microscope className="h-4 w-4" />
-                    },
-                    {
-                      title: "Innovative Formulations",
-                      description: "Our scientists develop specialized compounds that maximize effectiveness while minimizing environmental impact.",
-                      icon: <FlaskConical className="h-4 w-4" />
-                    },
-                    {
-                      title: "Data-Driven Approach",
-                      description: "We continuously analyze performance metrics to refine and improve our agricultural solutions.",
-                      icon: <BarChart3 className="h-4 w-4" />
-                    }
-                  ].map((item, index) => (
+                  {researchApproaches.map((approach, index) => (
                     <motion.div 
                       key={index}
                       initial={{ opacity: 0, x: 20 }}
@@ -270,11 +286,11 @@ export function ResearchSection({
                       className="flex items-start"
                     >
                       <div className="mr-4 mt-1 h-8 w-8 flex-shrink-0 rounded-lg bg-[#f0f9f6] flex items-center justify-center text-[#0f766e]">
-                        {item.icon}
+                        {getApproachIcon(index)}
                       </div>
                       <div>
-                        <h4 className="font-semibold text-gray-900">{item.title}</h4>
-                        <p className="text-gray-600 mt-1">{item.description}</p>
+                        <h4 className="font-semibold text-gray-900">{approach.title}</h4>
+                        <p className="text-gray-600 mt-1">{approach.description}</p>
                       </div>
                     </motion.div>
                   ))}
