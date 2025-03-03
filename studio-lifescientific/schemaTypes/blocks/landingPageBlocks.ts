@@ -566,37 +566,18 @@ export const landingResearchBlock = defineType({
               title: 'Image',
               type: 'image',
               options: {
-                hotspot: true
+                hotspot: true,
               },
-              fields: [
-                defineField({
-                  name: 'alt',
-                  type: 'string',
-                  title: 'Alternative text',
-                  description: 'Description of what this image shows',
-                  options: {
-                    aiAssist: {
-                      translateAction: true
-                    }
-                  }
-                }),
-                defineField({
-                  name: 'caption',
-                  type: 'string',
-                  title: 'Caption',
-                  description: 'Optional caption to display with the image',
-                  options: {
-                    aiAssist: {
-                      translateAction: true
-                    }
-                  }
-                })
-              ]
-            }
-          ]
-        }
+            }),
+            defineField({
+              name: 'caption',
+              title: 'Caption',
+              type: 'string',
+            }),
+          ],
+        },
       ],
-      validation: Rule => Rule.max(3)
+      validation: (Rule) => Rule.max(3),
     })
   ],
   preview: {
@@ -1131,9 +1112,9 @@ export const landingContactBlock = defineType({
 // Landing FAQ Section
 export const landingFAQBlock = defineType({
   name: 'landingFAQ',
-  title: 'Landing FAQ',
+  title: 'FAQ Section',
   type: 'object',
-  icon: InfoOutlineIcon,
+  icon: DocumentIcon,
   fields: [
     defineField({
       name: 'title',
@@ -1208,9 +1189,9 @@ export const landingFAQBlock = defineType({
 // Landing Partners Section
 export const landingPartnersBlock = defineType({
   name: 'landingPartners',
-  title: 'Landing Partners',
+  title: 'Partners & Certifications',
   type: 'object',
-  icon: TagIcon,
+  icon: LinkIcon,
   fields: [
     defineField({
       name: 'title',

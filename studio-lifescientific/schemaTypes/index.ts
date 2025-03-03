@@ -7,6 +7,11 @@ import product from './product'
 import productDocument from './productDocument'
 import recommendedTool from './recommendedTool'
 import { localizedText } from './shared/localizedText'
+import blogPost from './blogPost'
+import category from './category'
+import author from './author'
+import blogPage from './blogPage'
+import navigation from './navigation'
 
 export const schemaTypes = [
   // Documents
@@ -14,6 +19,11 @@ export const schemaTypes = [
   product,
   productDocument,
   recommendedTool,
+  blogPost,
+  category,
+  author,
+  blogPage,
+  navigation,
   
   // Blocks
   heroBlock,

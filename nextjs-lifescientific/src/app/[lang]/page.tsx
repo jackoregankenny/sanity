@@ -9,9 +9,61 @@ import { AboutSection } from "@/components/landing/AboutSection"
 import { TestimonialsSection } from "@/components/landing/TestimonialsSection"
 import { ResearchSection } from "@/components/landing/ResearchSection"
 import { ContactSection } from "@/components/landing/ContactSection"
-import { FAQSection } from '@/components/landing/FAQSection'
-import { PartnersSection } from '@/components/landing/PartnersSection'
 import { createClient } from '@/lib/sanity.client'
+import React from 'react'
+
+// Define types for our dynamically imported components
+type FAQSectionProps = {
+  key: string
+  title: string
+  subtitle: string
+  questions: Array<{
+    question: string
+    answer: string
+  }>
+}
+
+type PartnersSectionProps = {
+  key: string
+  title: string
+  subtitle: string
+  partners: Array<{
+    name: string
+    logo: any
+    link?: string
+  }>
+}
+
+// Create placeholder components
+const PlaceholderFAQSection: React.FC<FAQSectionProps> = () => (
+  <div className="p-8 text-center">FAQ Section (Component not implemented)</div>
+)
+
+const PlaceholderPartnersSection: React.FC<PartnersSectionProps> = () => (
+  <div className="p-8 text-center">Partners Section (Component not implemented)</div>
+)
+
+// Check if components exist before importing
+let FAQSection: React.ComponentType<FAQSectionProps>;
+let PartnersSection: React.ComponentType<PartnersSectionProps>;
+
+try {
+  // Dynamic import with proper typing
+  const FAQModule = require('@/components/landing/FAQSection');
+  FAQSection = FAQModule.FAQSection;
+} catch (e) {
+  // Component doesn't exist yet, use placeholder
+  FAQSection = PlaceholderFAQSection;
+}
+
+try {
+  // Dynamic import with proper typing
+  const PartnersModule = require('@/components/landing/PartnersSection');
+  PartnersSection = PartnersModule.PartnersSection;
+} catch (e) {
+  // Component doesn't exist yet, use placeholder
+  PartnersSection = PlaceholderPartnersSection;
+}
 
 interface Props {
   params: Promise<{
@@ -45,18 +97,17 @@ export function generateMetadata({ params }: { params: { lang: string } }): Meta
 // Create Sanity client
 const client = createClient()
 
-const componentMap = {
-  landingHero: MinimalHero, // or any other hero component
+// Component map with improved typing
+const componentMap: Record<string, React.ComponentType<any>> = {
+  landingHero: MinimalHero,
   landingFeatures: FeaturesSection,
   landingProducts: ProductsSection, 
   landingResearch: ResearchSection,
   landingTestimonials: TestimonialsSection,
-  landingValues: ValuesSection,
-  landingStats: StatsSection,
+  landingAbout: AboutSection,
   landingContact: ContactSection,
   landingFAQ: FAQSection,
   landingPartners: PartnersSection,
-  // add more mappings as needed
 }
 
 export default async function LandingPage(props: Props) {
@@ -117,6 +168,9 @@ export default async function LandingPage(props: Props) {
         title,
         description
       },
+      quoteText,
+      quoteAuthor,
+      quoteRole,
       description,
       values,
       testimonials[] {
@@ -133,7 +187,39 @@ export default async function LandingPage(props: Props) {
         }
       },
       email,
-      phone
+      phone,
+      // FAQ Section fields
+      faqs[] {
+        question,
+        answer
+      },
+      backgroundStyle,
+      // Partners Section fields
+      partnersTitle,
+      partners[] {
+        name,
+        logo {
+          asset->{
+            _id,
+            url
+          },
+          alt
+        },
+        link
+      },
+      certificationsTitle,
+      certifications[] {
+        name,
+        logo {
+          asset->{
+            _id,
+            url
+          },
+          alt
+        },
+        description
+      },
+      showTrustBadges
     }
   }`
 
@@ -218,6 +304,9 @@ export default async function LandingPage(props: Props) {
                   description={block.description}
                   researchApproaches={block.researchApproaches || []}
                   image={block.image}
+                  quoteText={block.quoteText}
+                  quoteAuthor={block.quoteAuthor}
+                  quoteRole={block.quoteRole}
                 />
               )
             case 'landingTestimonials':
@@ -257,7 +346,7 @@ export default async function LandingPage(props: Props) {
                   key={block._key}
                   title={block.title}
                   subtitle={block.subtitle}
-                  questions={block.questions || []}
+                  questions={block.faqs || []}
                 />
               )
             case 'landingPartners':

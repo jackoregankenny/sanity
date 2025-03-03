@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
-import { LanguageSelector } from "@/components/LanguageSelector";
+import { Navbar } from "@/components/Navbar";
+import { createClient } from "@/lib/sanity.client";
 import { getDefaultLanguage } from "@/config/languages";
+import { getTranslations } from "@/hooks/useTranslations";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,6 +21,37 @@ interface RootLayoutProps {
   }>
 }
 
+// Fetch navigation data from Sanity
+async function getNavigation(lang: string) {
+  const client = createClient();
+  
+  try {
+    const navigation = await client.fetch(`
+      *[_type == "navigation" && language == $lang][0] {
+        title,
+        logo,
+        logoText,
+        items[] {
+          text,
+          href,
+          isExternal,
+          icon,
+          children[] {
+            text,
+            href,
+            isExternal
+          }
+        }
+      }
+    `, { lang });
+    
+    return navigation;
+  } catch (error) {
+    console.error("Error fetching navigation:", error);
+    return null;
+  }
+}
+
 export default async function RootLayout(props: RootLayoutProps) {
   const params = await props.params;
 
@@ -26,36 +59,24 @@ export default async function RootLayout(props: RootLayoutProps) {
     children
   } = props;
 
-  const currentLang = params?.lang || getDefaultLanguage().id
+  const currentLang = params?.lang || getDefaultLanguage().id;
+  
+  // Get navigation data
+  const navigationData = await getNavigation(currentLang);
+  
+  // Get translations
+  const translations = await getTranslations(currentLang);
 
   return (
     <html lang={currentLang} className="scroll-smooth">
       <body className={`${inter.className} min-h-screen flex flex-col`}>
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container max-w-[80%] mx-auto flex h-16 items-center">
-            <div className="mr-4 flex">
-              <Link 
-                className="mr-6 flex items-center space-x-2 text-xl font-bold hover:text-primary transition-colors" 
-                href={`/${currentLang}`}
-              >
-                <span>Life Scientific</span>
-              </Link>
-            </div>
-            <nav className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-              <div className="flex-1 md:flex-none">
-                <Link 
-                  href={`/${currentLang}/products`}
-                  className="text-sm font-medium transition-colors hover:text-primary"
-                >
-                  Products
-                </Link>
-              </div>
-              <div className="flex items-center">
-                <LanguageSelector />
-              </div>
-            </nav>
-          </div>
-        </header>
+        <Navbar 
+          logo={navigationData?.logo} 
+          logoText={navigationData?.logoText || "Life Scientific"} 
+          items={navigationData?.items || []}
+          currentLang={currentLang}
+          translations={translations}
+        />
         <main className="flex-1">
           {children}
         </main>
@@ -76,7 +97,15 @@ export default async function RootLayout(props: RootLayoutProps) {
                       href={`/${currentLang}/products`}
                       className="text-sm text-muted-foreground hover:text-primary transition-colors"
                     >
-                      Products
+                      {translations.nav.products}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link 
+                      href={`/${currentLang}/blog`}
+                      className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      {translations.nav.blog}
                     </Link>
                   </li>
                 </ul>

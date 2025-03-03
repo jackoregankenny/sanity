@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react'
 import { motion, useInView, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import { BarChart3, FlaskConical, Microscope, Globe2 } from 'lucide-react'
+import { BarChart3, FlaskConical, Microscope, Globe2, Quote } from 'lucide-react'
 import Image from 'next/image'
 
 type ResearchStat = {
@@ -40,7 +40,10 @@ export function ResearchSection({
       description: "We continuously analyze performance metrics to refine and improve our agricultural solutions."
     }
   ],
-  image
+  image,
+  quoteText = "Our goal is to deliver innovative solutions that empower farmers to succeed while protecting the land they cultivate.",
+  quoteAuthor = "John Smith",
+  quoteRole = "CEO, Life Scientific"
 }: {
   title?: string
   subtitle?: string
@@ -48,6 +51,9 @@ export function ResearchSection({
   description?: string
   researchApproaches?: ResearchApproach[]
   image?: any
+  quoteText?: string
+  quoteAuthor?: string
+  quoteRole?: string
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const isInView = useInView(containerRef, { once: false, amount: 0.2 })
@@ -318,6 +324,40 @@ export function ResearchSection({
             </div>
           </div>
         </motion.div>
+        
+        {/* CEO Quote Section */}
+        {quoteText && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-16 max-w-4xl mx-auto"
+          >
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-10 relative overflow-hidden">
+              {/* Background quote accent */}
+              <Quote className="absolute top-4 left-4 h-24 w-24 text-[#0f766e]/5" />
+              
+              <div className="relative">
+                <div className="flex items-center mb-6">
+                  <div className="h-1 w-10 bg-[#0f766e] rounded-full mr-3"></div>
+                  <span className="text-[#0f766e] font-semibold text-sm uppercase tracking-wide">Leadership Perspective</span>
+                </div>
+                
+                <blockquote className="text-2xl font-medium text-gray-800 mb-6 leading-relaxed">
+                  "{quoteText}"
+                </blockquote>
+                
+                <div className="flex items-center">
+                  <div className="flex flex-col">
+                    <cite className="not-italic font-semibold text-gray-900">{quoteAuthor}</cite>
+                    <span className="text-gray-500 text-sm">{quoteRole}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
     </section>
   )

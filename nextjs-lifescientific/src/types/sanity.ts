@@ -139,6 +139,112 @@ export interface LandingContactBlock {
   formFields?: LandingFormField[]
 }
 
+// Landing FAQ Section Block
+export interface FAQItem {
+  question: string
+  answer: string
+}
+
+export interface LandingFAQBlock {
+  _type: 'landingFAQ'
+  _key: string
+  title: string
+  subtitle?: string
+  faqs: FAQItem[]
+  backgroundStyle?: 'light' | 'dark' | 'gradient'
+}
+
+// Landing Partners Section Block
+export interface PartnerItem {
+  name: string
+  logo?: SanityImage
+  link?: string
+}
+
+export interface CertificationItem {
+  name: string
+  logo?: SanityImage
+  description: string
+}
+
+export interface LandingPartnersBlock {
+  _type: 'landingPartners'
+  _key: string
+  title: string
+  subtitle?: string
+  partnersTitle?: string
+  partners?: PartnerItem[]
+  certificationsTitle?: string
+  certifications?: CertificationItem[]
+  showTrustBadges?: boolean
+}
+
+// Blog-related types
+export interface Author {
+  _id: string
+  name: string
+  slug: SanitySlug
+  avatar?: SanityImage
+  bio?: any[] // Portable Text
+  role?: string
+  email?: string
+  socialLinks?: Array<{
+    platform: string
+    url: string
+  }>
+}
+
+export interface Category {
+  _id: string
+  title: string
+  slug: SanitySlug
+  description?: string
+  color?: string
+  featuredImage?: SanityImage
+  language: string
+}
+
+export interface BlogPost {
+  _id: string
+  title: string
+  slug: SanitySlug
+  language: string
+  translationStatus?: 'up-to-date' | 'needs-review' | 'out-of-sync'
+  lastTranslated?: string
+  version?: number
+  author?: Author
+  categories?: Category[]
+  publishedAt: string
+  featuredImage?: SanityImage
+  excerpt?: string
+  content: any[] // Portable Text
+  relatedPosts?: BlogPost[]
+  seoTitle?: string
+  seoDescription?: string
+}
+
+export interface BlogPage {
+  _id: string
+  title: string
+  subtitle?: string
+  language: string
+  translationStatus?: 'up-to-date' | 'needs-review' | 'out-of-sync'
+  lastTranslated?: string
+  version?: number
+  description?: string
+  heroImage?: SanityImage
+  postsPerPage: number
+  featuredPosts?: BlogPost[]
+  showAuthorBio: boolean
+  showCategoriesWidget: boolean
+  showRecentPostsWidget: boolean
+  showSubscribeWidget: boolean
+  subscribeFormTitle?: string
+  subscribeFormText?: string
+  seoTitle?: string
+  seoDescription?: string
+}
+
 // Union type for all page builder blocks
 export type PageBuilderBlock = 
   | LandingHeroBlock
@@ -148,6 +254,8 @@ export type PageBuilderBlock =
   | LandingAboutBlock
   | LandingTestimonialsBlock
   | LandingContactBlock
+  | LandingFAQBlock
+  | LandingPartnersBlock
 
 // Complete Landing Page structure
 export interface LandingPage {

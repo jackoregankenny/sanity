@@ -4,21 +4,34 @@ import React from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Check, Award, ShieldCheck } from 'lucide-react'
+import { urlForImage } from '@/lib/sanity.image'
 
-interface Partner {
+type Partner = {
   name: string
-  logo: string
+  logo: {
+    asset: {
+      _id: string
+      url: string
+    }
+    alt?: string
+  }
   link?: string
 }
 
-interface Certification {
+type Certification = {
   name: string
-  logo?: string
   description: string
+  logo?: {
+    asset: {
+      _id: string
+      url: string
+    }
+    alt?: string
+  }
 }
 
-interface PartnersSectionProps {
-  title?: string
+type PartnersSectionProps = {
+  title: string
   subtitle?: string
   partnersTitle?: string
   partners?: Partner[]
@@ -28,232 +41,150 @@ interface PartnersSectionProps {
 }
 
 export function PartnersSection({
-  title = "Our Partners & Certifications",
-  subtitle = "Collaborating with industry leaders to deliver quality agricultural solutions",
-  partnersTitle = "Trusted Partners",
+  title,
+  subtitle,
+  partnersTitle = 'Trusted Partners',
   partners = [],
-  certificationsTitle = "Industry Certifications",
+  certificationsTitle = 'Industry Certifications',
   certifications = [],
   showTrustBadges = true
 }: PartnersSectionProps) {
-  // Default partners if none are provided
-  const defaultPartners: Partner[] = [
-    { name: "Agricultural Institute", logo: "/placeholder-logo-1.svg", link: "#" },
-    { name: "Global Farming Initiative", logo: "/placeholder-logo-2.svg", link: "#" },
-    { name: "EcoFarm Alliance", logo: "/placeholder-logo-3.svg", link: "#" },
-    { name: "Research Labs International", logo: "/placeholder-logo-4.svg", link: "#" },
-    { name: "Sustainable Crop Network", logo: "/placeholder-logo-5.svg", link: "#" }
-  ]
-
-  // Default certifications if none are provided
-  const defaultCertifications: Certification[] = [
-    {
-      name: "ISO 9001:2015",
-      logo: "/placeholder-cert-1.svg",
-      description: "International standard for quality management systems"
-    },
-    {
-      name: "Environmental Stewardship",
-      logo: "/placeholder-cert-2.svg",
-      description: "Recognizing our commitment to sustainable agricultural practices"
-    },
-    {
-      name: "GMP Certification",
-      logo: "/placeholder-cert-3.svg",
-      description: "Good Manufacturing Practice ensuring consistent quality control"
-    }
-  ]
-
-  const partnersToUse = partners.length > 0 ? partners : defaultPartners
-  const certificationsToUse = certifications.length > 0 ? certifications : defaultCertifications
-
-  // Function to render a partner logo with fallback
-  const renderPartnerLogo = (partner: Partner, index: number) => {
-    return (
-      <motion.div
-        key={index}
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: index * 0.1 }}
-        className="flex items-center justify-center p-4"
-      >
-        {partner.link ? (
-          <a 
-            href={partner.link} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="grayscale hover:grayscale-0 opacity-70 hover:opacity-100 transition-all duration-300 flex items-center justify-center"
-            aria-label={`Visit ${partner.name}`}
-          >
-            {partner.logo ? (
-              <div className="relative h-12 w-32 md:h-16 md:w-40">
-                <Image 
-                  src={partner.logo}
-                  alt={partner.name}
-                  fill
-                  className="object-contain"
-                />
-              </div>
-            ) : (
-              <div className="bg-gray-100 rounded-lg p-4 text-center min-w-32">
-                <span className="font-medium text-gray-800">{partner.name}</span>
-              </div>
-            )}
-          </a>
-        ) : (
-          <div className="grayscale opacity-70 flex items-center justify-center">
-            {partner.logo ? (
-              <div className="relative h-12 w-32 md:h-16 md:w-40">
-                <Image 
-                  src={partner.logo}
-                  alt={partner.name}
-                  fill
-                  className="object-contain"
-                />
-              </div>
-            ) : (
-              <div className="bg-gray-100 rounded-lg p-4 text-center min-w-32">
-                <span className="font-medium text-gray-800">{partner.name}</span>
-              </div>
-            )}
-          </div>
-        )}
-      </motion.div>
-    )
-  }
-
-  // Function to render a certification with fallback
-  const renderCertification = (cert: Certification, index: number) => {
-    return (
-      <motion.div
-        key={index}
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: index * 0.1 }}
-        className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 flex flex-col items-center text-center"
-      >
-        {cert.logo ? (
-          <div className="relative h-16 w-16 mb-4">
-            <Image 
-              src={cert.logo}
-              alt={cert.name}
-              fill
-              className="object-contain"
-            />
-          </div>
-        ) : (
-          <Award className="h-12 w-12 text-[#0f766e] mb-4" />
-        )}
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{cert.name}</h3>
-        <p className="text-gray-600 text-sm">{cert.description}</p>
-      </motion.div>
-    )
-  }
+  const hasPartners = partners && partners.length > 0
+  const hasCertifications = certifications && certifications.length > 0
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section className="py-20 bg-white">
       <div className="container mx-auto px-4">
-        <div className="max-w-7xl mx-auto">
-          {/* Section header */}
-          <div className="text-center mb-12">
-            <motion.h2 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="text-3xl md:text-4xl font-bold text-gray-900 mb-4"
-            >
-              {title}
-            </motion.h2>
-            
-            {subtitle && (
-              <motion.p 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-lg text-gray-600 max-w-3xl mx-auto"
-              >
-                {subtitle}
-              </motion.p>
-            )}
-          </div>
-          
-          {/* Partners section */}
-          <div className="mb-16">
-            <motion.h3
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="text-xl font-semibold text-gray-900 mb-8 text-center"
-            >
-              {partnersTitle}
-            </motion.h3>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-center justify-center">
-              {partnersToUse.map((partner, index) => renderPartnerLogo(partner, index))}
-            </div>
-          </div>
-          
-          {/* Certifications section */}
-          <div className="mb-16">
-            <motion.h3
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="text-xl font-semibold text-gray-900 mb-8 text-center"
-            >
-              {certificationsTitle}
-            </motion.h3>
-            
-            <div className="grid md:grid-cols-3 gap-6">
-              {certificationsToUse.map((cert, index) => renderCertification(cert, index))}
-            </div>
-          </div>
-          
-          {/* Trust badges section */}
-          {showTrustBadges && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="bg-white rounded-xl border border-gray-100 p-6 md:p-8"
-            >
-              <h3 className="text-xl font-semibold text-gray-900 mb-6 text-center">Why Trust Life Scientific</h3>
-              
-              <div className="grid md:grid-cols-3 gap-8">
-                <div className="flex flex-col items-center text-center">
-                  <div className="bg-[#f0f9f6] p-4 rounded-full mb-4">
-                    <ShieldCheck className="h-8 w-8 text-[#0f766e]" />
-                  </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Quality Guaranteed</h4>
-                  <p className="text-gray-600">All products undergo rigorous testing to meet or exceed industry standards</p>
-                </div>
-                
-                <div className="flex flex-col items-center text-center">
-                  <div className="bg-[#f0f9f6] p-4 rounded-full mb-4">
-                    <Award className="h-8 w-8 text-[#0f766e]" />
-                  </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Award-Winning Research</h4>
-                  <p className="text-gray-600">Recognized for innovation in sustainable agricultural solutions</p>
-                </div>
-                
-                <div className="flex flex-col items-center text-center">
-                  <div className="bg-[#f0f9f6] p-4 rounded-full mb-4">
-                    <Check className="h-8 w-8 text-[#0f766e]" />
-                  </div>
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Regulatory Compliance</h4>
-                  <p className="text-gray-600">Meeting all regulatory requirements across global markets</p>
-                </div>
-              </div>
-            </motion.div>
-          )}
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">{title}</h2>
+          {subtitle && <p className="text-lg text-gray-600 max-w-3xl mx-auto">{subtitle}</p>}
         </div>
+
+        {/* Partners */}
+        {hasPartners && (
+          <div className="mb-16">
+            <h3 className="text-2xl font-bold text-center mb-8">{partnersTitle}</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+              {partners.map((partner, index) => (
+                <div key={index} className="flex items-center justify-center p-4 bg-gray-50 rounded-lg hover:shadow-md transition-shadow duration-300">
+                  {partner.link ? (
+                    <a 
+                      href={partner.link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block w-full h-full"
+                    >
+                      {partner.logo && urlForImage(partner.logo) ? (
+                        <div className="relative w-full h-20">
+                          <Image
+                            src={urlForImage(partner.logo)!.url()}
+                            alt={partner.logo.alt || partner.name}
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-20 flex items-center justify-center">
+                          <span className="text-center font-medium">{partner.name}</span>
+                        </div>
+                      )}
+                    </a>
+                  ) : (
+                    <>
+                      {partner.logo && urlForImage(partner.logo) ? (
+                        <div className="relative w-full h-20">
+                          <Image
+                            src={urlForImage(partner.logo)!.url()}
+                            alt={partner.logo.alt || partner.name}
+                            fill
+                            className="object-contain"
+                          />
+                        </div>
+                      ) : (
+                        <div className="h-20 flex items-center justify-center">
+                          <span className="text-center font-medium">{partner.name}</span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Certifications */}
+        {hasCertifications && (
+          <div>
+            <h3 className="text-2xl font-bold text-center mb-8">{certificationsTitle}</h3>
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {certifications.map((cert, index) => (
+                <div key={index} className="p-6 bg-gray-50 rounded-lg flex flex-col items-center text-center">
+                  {cert.logo && urlForImage(cert.logo) ? (
+                    <div className="relative w-20 h-20 mb-4">
+                      <Image
+                        src={urlForImage(cert.logo)!.url()}
+                        alt={cert.logo.alt || cert.name}
+                        fill
+                        className="object-contain"
+                      />
+                    </div>
+                  ) : null}
+                  <h4 className="text-xl font-semibold mb-2">{cert.name}</h4>
+                  <p className="text-gray-600">{cert.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Trust Badges */}
+        {showTrustBadges && (
+          <div className="mt-16 p-8 bg-gray-50 rounded-lg">
+            <h3 className="text-2xl font-bold text-center mb-8">Why Trust Life Scientific</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+              <div>
+                <div className="mb-2 mx-auto w-12 h-12 flex items-center justify-center bg-green-100 text-green-600 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h4 className="font-semibold">Quality Certified</h4>
+              </div>
+              <div>
+                <div className="mb-2 mx-auto w-12 h-12 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                  </svg>
+                </div>
+                <h4 className="font-semibold">Science-Based</h4>
+              </div>
+              <div>
+                <div className="mb-2 mx-auto w-12 h-12 flex items-center justify-center bg-yellow-100 text-yellow-600 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                  </svg>
+                </div>
+                <h4 className="font-semibold">Regulatory Compliant</h4>
+              </div>
+              <div>
+                <div className="mb-2 mx-auto w-12 h-12 flex items-center justify-center bg-indigo-100 text-indigo-600 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h4 className="font-semibold">Trusted Globally</h4>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!hasPartners && !hasCertifications && (
+          <div className="text-center p-8 bg-gray-100 rounded-lg max-w-3xl mx-auto">
+            <p>Add partners and certifications in Sanity Studio to display them here.</p>
+          </div>
+        )}
       </div>
     </section>
   )

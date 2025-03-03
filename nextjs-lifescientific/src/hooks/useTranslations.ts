@@ -8,6 +8,11 @@ interface Translations {
     products: string
     about: string
     contact: string
+    blog: string
+    services: string
+    home: string
+    search: string
+    language: string
   }
   products: {
     pageTitle: string
@@ -46,6 +51,28 @@ interface Translations {
     loading: string
     error: string
     noResults: string
+    newsletter: {
+      title: string
+      description: string
+      buttonText: string
+      placeholder: string
+      successMessage: string
+      errorMessage: string
+    }
+  }
+  blog: {
+    categories: string
+    recentPosts: string
+    readMore: string
+    relatedPosts: string
+    subscribe: string
+    emailPlaceholder: string
+    searchPlaceholder: string
+    noResults: string
+    authorBy: string
+    publishedOn: string
+    backToList: string
+    loadMore: string
   }
 }
 
@@ -54,7 +81,12 @@ const defaultTranslations: Translations = {
   nav: {
     products: 'Products',
     about: 'About',
-    contact: 'Contact'
+    contact: 'Contact',
+    blog: 'Blog',
+    services: 'Services',
+    home: 'Home',
+    search: 'Search',
+    language: 'Language'
   },
   products: {
     pageTitle: 'Our Products',
@@ -92,14 +124,37 @@ const defaultTranslations: Translations = {
   common: {
     loading: 'Loading...',
     error: 'An error occurred. Please try again later.',
-    noResults: 'No results found.'
+    noResults: 'No results found.',
+    newsletter: {
+      title: 'Stay Updated',
+      description: 'Join our newsletter for the latest insights and updates.',
+      buttonText: 'Subscribe',
+      placeholder: 'Your email address',
+      successMessage: 'Thank you for subscribing!',
+      errorMessage: 'An error occurred. Please try again.'
+    }
+  },
+  blog: {
+    categories: 'Categories',
+    recentPosts: 'Recent Posts',
+    readMore: 'Read more',
+    relatedPosts: 'Related Posts',
+    subscribe: 'Subscribe',
+    emailPlaceholder: 'Your email address',
+    searchPlaceholder: 'Search blog...',
+    noResults: 'No posts found',
+    authorBy: 'By',
+    publishedOn: 'Published on',
+    backToList: 'Back to all posts',
+    loadMore: 'Load more'
   }
 }
 
 const TRANSLATIONS_QUERY = `*[_type == "translations" && language == $lang][0] {
   nav,
   products,
-  common
+  common,
+  blog
 }`
 
 export async function getTranslations(lang: LanguageCode): Promise<Translations> {
@@ -128,7 +183,15 @@ export async function getTranslations(lang: LanguageCode): Promise<Translations>
           labels: { ...defaultTranslations.products.labels, ...translations.products.labels },
           formulation: { ...defaultTranslations.products.formulation, ...translations.products.formulation }
         },
-        common: { ...defaultTranslations.common, ...translations.common }
+        common: { 
+          ...defaultTranslations.common, 
+          ...translations.common,
+          newsletter: {
+            ...defaultTranslations.common.newsletter,
+            ...(translations.common?.newsletter || {})
+          }
+        },
+        blog: { ...defaultTranslations.blog, ...(translations.blog || {}) }
       }
     }
 
@@ -156,7 +219,15 @@ export async function getTranslations(lang: LanguageCode): Promise<Translations>
             labels: { ...defaultTranslations.products.labels, ...englishTranslations.products.labels },
             formulation: { ...defaultTranslations.products.formulation, ...englishTranslations.products.formulation }
           },
-          common: { ...defaultTranslations.common, ...englishTranslations.common }
+          common: { 
+            ...defaultTranslations.common, 
+            ...englishTranslations.common,
+            newsletter: {
+              ...defaultTranslations.common.newsletter,
+              ...(englishTranslations.common?.newsletter || {})
+            }
+          },
+          blog: { ...defaultTranslations.blog, ...(englishTranslations.blog || {}) }
         }
       }
     }

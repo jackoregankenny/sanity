@@ -66,6 +66,8 @@ export default defineType({
         { type: 'landingAbout' },
         { type: 'landingTestimonials' },
         { type: 'landingContact' },
+        { type: 'landingFAQ' },
+        { type: 'landingPartners' },
         
         // Standard Page Blocks
         { type: 'hero' },
