@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { urlForImage } from '@/lib/sanity.image'
+import { formatDate } from '@/lib/utils'
 import { BlogPost, Category } from '@/types/sanity'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -175,7 +176,7 @@ export function BlogSidebar({
                     </Link>
                     {post.publishedAt && (
                       <p className="text-xs text-gray-500">
-                        {new Date(post.publishedAt).toLocaleDateString()}
+                        {formatDate(post.publishedAt)}
                       </p>
                     )}
                   </div>

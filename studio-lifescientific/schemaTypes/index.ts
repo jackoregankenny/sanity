@@ -2,6 +2,7 @@ import { heroBlock } from './blocks/heroBlock'
 import { featuresBlock, galleryBlock } from './blocks/pageBlocks'
 import { videoBlock } from './blocks/videoBlock'
 import { landingPageBlocks } from './blocks/landingPageBlocks'
+import { blogBlocks } from './blocks/blogBlocks'
 import page from './page'
 import product from './product'
 import productDocument from './productDocument'
@@ -31,6 +32,7 @@ export const schemaTypes = [
   galleryBlock,
   videoBlock,
   ...landingPageBlocks,
+  ...blogBlocks,
   
   // Shared
   localizedText,
